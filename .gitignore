@@ -6,3 +6,6 @@ bin/
 .project
 .classpath
 *.txt
+build
+.gradle
+.idea
