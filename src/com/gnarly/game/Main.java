@@ -1,6 +1,7 @@
 package com.gnarly.game;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_F11;
 
 import com.gnarly.engine.audio.ALManagement;
 import com.gnarly.engine.display.Camera;
@@ -8,7 +9,7 @@ import com.gnarly.engine.display.Window;
 import com.gnarly.engine.shaders.Shader;
 
 public class Main {
-
+	private final float FULL_CAMERA_HEIGHT = 18;
 	private int FPS = 60;
 	
 	public static double dtime;
@@ -42,10 +43,11 @@ public class Main {
 		al.destroy();
 		Window.terminate();
 	}
-	
+
+
 	private void init() {
 		al = new ALManagement();
-		window = new Window("Snake++", true);
+		window = new Window(1600, 900, "Snake++", true, true, true);
 		camera = new Camera(32, 18);
 		Shader.init();
 		menu = new Menu(window, camera);
@@ -54,8 +56,21 @@ public class Main {
 	
 	private void update() {
 		window.update();
-		if(window.keyPressed(GLFW_KEY_ESCAPE) == 1)
+
+		if (window.wasResized()) {
+			float windowRatio = (float)window.getWidth() / (float)window.getHeight();
+			camera.setDims(windowRatio * FULL_CAMERA_HEIGHT, FULL_CAMERA_HEIGHT);
+		}
+
+		if(window.keyPressed(GLFW_KEY_ESCAPE) == 1) {
 			window.close();
+			return;
+		}
+
+		if (window.keyPressed(GLFW_KEY_F11) == 1) {
+			window.setFullScreen(!window.getFullScreen());
+		}
+
 		if(state == 0) {
 			menu.update();
 			state = menu.getState();

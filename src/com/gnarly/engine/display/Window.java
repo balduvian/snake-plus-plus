@@ -1,36 +1,6 @@
 package com.gnarly.engine.display;
 
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
-import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
-import static org.lwjgl.glfw.GLFW.GLFW_DECORATED;
-import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_LAST;
-import static org.lwjgl.glfw.GLFW.GLFW_MAXIMIZED;
-import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LAST;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_CORE_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_FORWARD_COMPAT;
-import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_PROFILE;
-import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
-import static org.lwjgl.glfw.GLFW.GLFW_SAMPLES;
-import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
-import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
-import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
-import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
-import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
-import static org.lwjgl.glfw.GLFW.glfwInit;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
-import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
-import static org.lwjgl.glfw.GLFW.glfwTerminate;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
@@ -51,6 +21,8 @@ import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 
+import java.util.Arrays;
+
 public class Window {
 
 	public static int
@@ -62,9 +34,10 @@ public class Window {
 	private long window;
 	private int width, height;
 	private boolean resized;
-	
-	private int[] mouseButtons = new int[GLFW_MOUSE_BUTTON_LAST + 1];
-	private int[] keys = new int[GLFW_KEY_LAST + 1];
+	private boolean fullScreen;
+
+	private final int[] mouseButtons = new int[GLFW_MOUSE_BUTTON_LAST + 1];
+	private final int[] keys = new int[GLFW_KEY_LAST + 1];
 	
 	public Window(String title, boolean vSync) {
 		init(0, 0, title, vSync, false, false, false);
@@ -80,9 +53,8 @@ public class Window {
 	
 	public void init(int lwidth, int lheight, String title, boolean vSync, boolean resizable, boolean decorated, boolean maximized) {
 		glfwSetErrorCallback(GLFWErrorCallback.createPrint(System.err));
-		
-		for (int i = 0; i < mouseButtons.length; i++)
-			mouseButtons[i] = 0;
+
+		Arrays.fill(mouseButtons, 0);
 		
 		if(!glfwInit()) {
 			System.err.println("GLFW failed to initialize!");
@@ -106,11 +78,13 @@ public class Window {
 		if(lwidth == 0 || lheight == 0) {
 			width = vidMode.width();
 			height = vidMode.height();
+			fullScreen = true;
 			window = glfwCreateWindow(width, height, title, glfwGetPrimaryMonitor(), 0);
 		}
 		else {
 			this.width = lwidth;
 			this.height = lheight;
+			fullScreen = false;
 			window = glfwCreateWindow(width, height, title, 0, 0);
 		}
 		
@@ -131,6 +105,10 @@ public class Window {
 		});
 		
 		glfwSetKeyCallback(window, (long window, int key, int scancode, int action, int mods) -> {
+			/* fix volume keys bug */
+			if (key < 0 || key >= keys.length) {
+				return;
+			}
 			keys[key] = action;
 		});
 		
@@ -150,6 +128,24 @@ public class Window {
 		width = awidth[0];
 		height = aheight[0];
 	}
+
+	public void setFullScreen(boolean fullScreen) {
+		var primaryMonitor = glfwGetPrimaryMonitor();
+		var vidMode = glfwGetVideoMode(primaryMonitor);
+		if (vidMode == null) return;
+
+		this.fullScreen = fullScreen;
+
+		if (fullScreen) {
+			this.width = vidMode.width();
+			this.height = vidMode.height();
+			glfwSetWindowMonitor(window, primaryMonitor , 0, 0, vidMode.width(), vidMode.height(), vidMode.refreshRate());
+		} else {
+			this.width = vidMode.width() / 2;
+			this.height = vidMode.height() / 2;
+			glfwSetWindowMonitor(window, 0, (vidMode.width() - this.width) / 2, (vidMode.height() - this.height) / 2, this.width, this.height, vidMode.refreshRate());
+		}
+	}
 	
 	public void update() {
 		for (int i = 0; i < mouseButtons.length; i++)
@@ -168,6 +164,10 @@ public class Window {
 	
 	public int getHeight() {
 		return height;
+	}
+
+	public boolean getFullScreen() {
+		return fullScreen;
 	}
 	
 	public void clear() {

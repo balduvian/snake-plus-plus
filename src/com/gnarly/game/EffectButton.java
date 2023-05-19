@@ -1,13 +1,11 @@
 package com.gnarly.game;
 
-import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1;
-
-import org.joml.Vector3f;
-
 import com.gnarly.engine.display.Camera;
 import com.gnarly.engine.display.Window;
 import com.gnarly.engine.model.EffectRect;
-import com.gnarly.engine.texture.Texture;
+import org.joml.Vector3f;
+
+import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1;
 
 public class EffectButton {
 
@@ -63,7 +61,18 @@ public class EffectButton {
 			state = UNPRESSED;
 		}
 	}
-	
+
+	public void set(float x, float y, float width, float height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+
+		for (var state : states) {
+			state.set(x, y, width, height);
+		}
+	}
+
 	public void render() {
 		states[tex].render();
 	}
