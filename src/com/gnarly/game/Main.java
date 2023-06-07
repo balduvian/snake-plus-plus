@@ -2,11 +2,13 @@ package com.gnarly.game;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F11;
+import static org.lwjgl.opengl.GL20.GL_MAX_FRAGMENT_UNIFORM_COMPONENTS;
 
 import com.gnarly.engine.audio.ALManagement;
 import com.gnarly.engine.display.Camera;
 import com.gnarly.engine.display.Window;
 import com.gnarly.engine.shaders.Shader;
+import org.lwjgl.opengl.GL46;
 
 public class Main {
 	private final float FULL_CAMERA_HEIGHT = 18;
@@ -52,6 +54,8 @@ public class Main {
 		Shader.init();
 		menu = new Menu(window, camera);
 		panel = new GamePanel(window, camera);
+
+		System.out.println(GL46.glGetInteger(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS));
 	}
 	
 	private void update() {

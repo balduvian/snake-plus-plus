@@ -17,7 +17,7 @@ public class GamePanel {
 	private Countdown countdown;
 	
 	private Map[] maps;
-	private int curLevel = 0;
+	private int curLevel = 1;
 	
 	private EffectButton retry, next;
 	private EffectRect sretry, snext;

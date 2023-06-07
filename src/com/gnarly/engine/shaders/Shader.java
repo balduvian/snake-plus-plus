@@ -30,6 +30,7 @@ public abstract class Shader {
 	public static Shader2c  SHADER2C;
 	public static Shader2le SHADER2LE;
 	public static Shader2t  SHADER2T;
+	public static LevelShader  LEVEL_SHADER;
 	
 	protected int program;
 	
@@ -58,7 +59,7 @@ public abstract class Shader {
 	private int loadShader(String path, int type) {
 		StringBuilder file = new StringBuilder();
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
+			BufferedReader reader = new BufferedReader(new FileReader(path));
 			String line;
 			while((line = reader.readLine()) != null)
 				file.append(line + '\n');
@@ -97,5 +98,6 @@ public abstract class Shader {
 		SHADER2C = new Shader2c();
 		SHADER2LE = new Shader2le();
 		SHADER2T = new Shader2t();
+		LEVEL_SHADER = new LevelShader();
 	}
 }
