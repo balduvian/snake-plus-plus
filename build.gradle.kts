@@ -1,13 +1,14 @@
 plugins {
 	id("com.github.johnrengelman.shadow") version "7.1.2"
+	kotlin("jvm") version "1.8.21"
 	application
 }
 
 group = "com.gnarly"
 version = "1.0.0"
 
-val lwjglVersion = "3.3.1"
-val jomlVersion = "1.10.4"
+val lwjglVersion = "3.3.2"
+val jomlVersion = "1.10.5"
 
 repositories {
 	mavenCentral()
@@ -37,16 +38,13 @@ sourceSets {
 }
 
 tasks {
+	jar {
+		enabled = false
+	}
 	shadowJar {
 		archiveFileName.set("${project.name}.jar")
 		manifest {
-			attributes(mapOf("Main-Class" to "game/GameKt"))
-		}
-	}
-	jar {
-		archiveFileName.set("${project.name}.jar")
-		manifest {
-			attributes(mapOf("Main-Class" to "game/GameKt"))
+			attributes(mapOf("Main-Class" to "com/gnarly/game/MainKt"))
 		}
 	}
 	build {
@@ -55,5 +53,5 @@ tasks {
 }
 
 application {
-	mainClass.set("com/gnarly/game/Main")
+	mainClass.set("com/gnarly/game/MainKt")
 }

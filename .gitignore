@@ -9,3 +9,4 @@ bin/
 build
 .gradle
 .idea
+*.log
