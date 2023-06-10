@@ -61,12 +61,14 @@ class GamePanel : Scene {
 		Assets.mapTemplates[levelIndex].let { mapTemplate ->
 			map = mapTemplate.toMap()
 			val music = mapTemplate.music
-			music.play(true)
 			this.music = music
 			mapTemplate.writeDataTexture(levelDataTexture)
 
 			snake = Snake(mapTemplate.snakeStartDir, 10, mapTemplate.snakeStartPos)
 		}
+
+		Assets.countdownMusic.play(false)
+		Assets.deathMusic.stop()
 
 		countdown = Countdown(3.0f)
 		state = STATE_COUNTDOWN
@@ -105,6 +107,7 @@ class GamePanel : Scene {
 			countdown.update(delta)
 			if (countdown.isDone()) {
 				state = STATE_GOING
+				music?.play(true)
 			}
 
 		} else if (state == STATE_GOING) {
@@ -114,12 +117,16 @@ class GamePanel : Scene {
 				state = STATE_RETRY
 				snake.reduceToNothing()
 				cameraShake = tilesPerSecond / 10.0f
+				music?.stop()
+				Assets.deathMusic.play(false)
 
 			} else when (map.access(movingInto.x, movingInto.y, false)) {
 				MapTemplate.TYPE_WALL -> {
 					state = STATE_RETRY
 					snake.reduceToNothing()
 					cameraShake = tilesPerSecond / 10.0f
+					music?.stop()
+					Assets.deathMusic.play(false)
 				}
 				MapTemplate.TYPE_LENGTH -> {
 					map.map[map.indexOf(movingInto.x, movingInto.y)] = MapTemplate.TYPE_EMPTY
@@ -170,11 +177,6 @@ class GamePanel : Scene {
 			.scale(reminderScale)
 			.setCenterX(camera.width / 2.0f)
 			.setCenterY(camera.height * 0.25f)
-
-		Assets.colorShader.enable()
-		Assets.colorShader.setMVP(camera.getMP(0.0f, 0.0f, camera.width / 2.0f, camera.height / 2.0f))
-		Assets.colorShader.setColor(0.0f, 1.0f, 1.0f, 0.25f)
-		Assets.rect.render()
 
 		if (state == STATE_COUNTDOWN) {
 			renderDark(camera, (0.7f * countdown.time.pow(1.0f / 3.0f)).coerceAtMost(1.0f))

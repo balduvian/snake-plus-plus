@@ -26,7 +26,8 @@ class WaveData(stream: AudioInputStream) {
 		stream.read(byteArray, 0, totalBytes)
 		stream.close()
 
-		data = ByteBuffer.wrap(byteArray)
+		data = ByteBuffer.allocateDirect(byteArray.size)
+		data.put(byteArray)
 		data.flip()
 	}
 

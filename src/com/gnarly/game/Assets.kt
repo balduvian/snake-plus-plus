@@ -31,6 +31,8 @@ object Assets {
 	lateinit var mapTemplates: List<MapTemplate>
 
 	lateinit var menuMusic: Sound
+	lateinit var deathMusic: Sound
+	lateinit var countdownMusic: Sound
 
 	fun init() {
 		shinyShader = ShinyShader()
@@ -73,5 +75,7 @@ object Assets {
 		}
 
 		menuMusic = Sound(File("res/audio/menu.wav"))
+		deathMusic = Sound(File("res/audio/death.wav"))
+		countdownMusic = Sound(File("res/audio/countdown.wav"))
 	}
 }
