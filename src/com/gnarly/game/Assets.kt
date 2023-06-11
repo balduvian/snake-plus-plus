@@ -33,6 +33,7 @@ object Assets {
 	lateinit var menuMusic: Sound
 	lateinit var deathMusic: Sound
 	lateinit var countdownMusic: Sound
+	lateinit var winMusic: Sound
 
 	fun init() {
 		shinyShader = ShinyShader()
@@ -82,5 +83,7 @@ object Assets {
 		menuMusic = Sound(File("res/audio/menu.wav"))
 		deathMusic = Sound(File("res/audio/death.wav"))
 		countdownMusic = Sound(File("res/audio/countdown.wav"))
+		winMusic =  Sound(File("res/audio/win.wav"))
+		winMusic.setVolume(2.0f)
 	}
 }

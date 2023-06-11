@@ -3,6 +3,7 @@ package com.gnarly.game
 import com.gnarly.engine.Camera
 import com.gnarly.engine.Vector
 import com.gnarly.engine.Window
+import org.joml.Matrix4f
 import org.lwjgl.glfw.GLFW.*
 
 class Snake(
@@ -115,6 +116,10 @@ class Snake(
 	fun getOn() = snake.first().point
 	fun getMovingInto() = snake.first().point + futureDirection.point
 
+	private fun Camera.snakeEndModel(x: Float, y: Float, width: Float, height: Float, rotation: Float): Matrix4f {
+		return model.translation(x, y, 0.0f).translate(0.5f, 0.5f, 0.0f).rotateZ(rotation).translate(-0.5f, -0.5f, 0.0f).scale(width, height, 0f)
+	}
+
 	fun render(camera: Camera, percent: Float) {
 		Assets.colorShader.enable()
 		Assets.colorShader.setColor(0.0f, 1.0f, 0.0f, 1.0f)
@@ -124,7 +129,8 @@ class Snake(
 			val futurePoint = snake.first().point + futureDirection.point
 
 			Assets.colorShader.setMVP(
-				camera.getMVPRotateCenter(
+				camera.projectionView(),
+				camera.snakeEndModel(
 					futurePoint.x.toFloat(),
 					futurePoint.y.toFloat(),
 					percent,
@@ -138,16 +144,19 @@ class Snake(
 		/* render body segments */
 		for (i in 0..snake.lastIndex - 1) {
 			val segment = snake[i]
-			Assets.colorShader.setMVP(camera.getMVP(segment.point.x.toFloat(), segment.point.y.toFloat(), 1.0f, 1.0f))
+			Assets.colorShader.setMVP(
+				camera.projectionView(),
+				camera.model(segment.point.x.toFloat(), segment.point.y.toFloat(), 1.0f, 1.0f)
+			)
 			Assets.rect.render()
 		}
 
 		/* render tail */
 		snake.lastOrNull()?.let { (tailDirection, tailPoint) ->
 			if (lengthToAdd > 0) {
-				Assets.colorShader.setMVP(camera.getMVP(tailPoint.x.toFloat(), tailPoint.y.toFloat(), 1.0f, 1.0f))
+				Assets.colorShader.setMVP(camera.projectionView(), camera.model(tailPoint.x.toFloat(), tailPoint.y.toFloat(), 1.0f, 1.0f))
 			} else {
-				Assets.colorShader.setMVP(camera.getMVPRotateCenter(tailPoint.x.toFloat(), tailPoint.y.toFloat(), 1.0f - percent, 1.0f, tailDirection.inverse().rotation))
+				Assets.colorShader.setMVP(camera.projectionView(), camera.snakeEndModel(tailPoint.x.toFloat(), tailPoint.y.toFloat(), 1.0f - percent, 1.0f, tailDirection.inverse().rotation))
 			}
 			Assets.rect.render()
 		}

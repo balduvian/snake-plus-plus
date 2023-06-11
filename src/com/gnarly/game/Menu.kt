@@ -26,21 +26,6 @@ class Menu : Scene {
 		time += delta
 		camCenter.setAdd(camVel * delta)
 
-		if (camCenter.x < 0) {
-			camCenter.x = 0.0f
-			camVel.x = abs(camVel.x)
-		} else if (camCenter.x > map.width) {
-			camCenter.x = map.width.toFloat()
-			camVel.x = -abs(camVel.x)
-		}
-		if (camCenter.y < 0) {
-			camCenter.y = 0.0f
-			camVel.y = abs(camVel.y)
-		} else if (camCenter.y > map.height) {
-			camCenter.y = map.height.toFloat()
-			camVel.y = -abs(camVel.y)
-		}
-
 		val playBox = TextureBox.fromTexture(Assets.playTexture)
 			.setCenterX(camera.width / 2.0f)
 			.setCenterY(camera.height * (1.0f / 3.0f))
@@ -52,6 +37,8 @@ class Menu : Scene {
 			shouldSwitch = true
 		}
 
+		camera.scale = 1.0f
+		camera.rotation += delta * 0.1f
 		camera.setCenter(camCenter.x, camCenter.y)
 	}
 
@@ -67,7 +54,7 @@ class Menu : Scene {
 			.setCenterX(camera.width / 2.0f)
 			.setTop(camera.height)
 		Assets.logoTexture.bind()
-		Assets.textureShader.enable().setMVP(camera.getMP(logoBox))
+		Assets.textureShader.enable().setMVP(camera.projection(), camera.boxModel(logoBox))
 		Assets.rect.render()
 
 		play.render(camera, Assets.playTexture, time)

@@ -44,11 +44,12 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 	fun render(camera: Camera, time: Float, dataTexture: Texture, paletteOverride: FloatArray? = null) {
 		writeDataTexture(dataTexture)
 
-		Assets.levelShader.enable().setMVP(camera.getMP(0.0f, 0.0f, camera.width, camera.height))
+		Assets.levelShader.enable().setMVP(
+			camera.projectionView(),
+			camera.model(camera.x - camera.width / 2.0f, camera.y - camera.height / 2.0f, camera.width * 2.0f, camera.height * 2.0f)
+		)
 		Assets.levelShader.setTime(time)
 			.setLevelSize(dataTexture.width - 1, dataTexture.height - 1)
-			.setCameraDims(camera.width, camera.height)
-			.setOffset(camera.x, camera.y)
 			.setcolorPalette(paletteOverride ?: palette)
 		dataTexture.bind()
 		Assets.rect.render()
@@ -62,7 +63,10 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 			for (x in minX..maxX) {
 				when (access(x, y)) {
 					MapTemplate.TYPE_END -> {
-						Assets.colorShader.enable().setMVP(camera.getMVP(x.toFloat(), y.toFloat(), 1.0f, 1.0f))
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+						)
 						Assets.colorShader.setColor(1.0f, 0.0f, 0.0f, 1.0f)
 						Assets.rect.render()
 					}

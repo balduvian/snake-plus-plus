@@ -41,7 +41,7 @@ class Button {
 
 	fun render(camera: Camera, texture: Texture, time: Float) {
 		texture.bind()
-		Assets.textureShader.enable().setMVP(camera.getMP(x, y, width, height))
+		Assets.textureShader.enable().setMVP(camera.projection(), camera.model(x, y, width, height))
 		Assets.rect.render()
 	}
 

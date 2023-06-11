@@ -1,6 +1,7 @@
 package com.gnarly.engine
 
 import org.joml.Matrix4f
+import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL46.*
 import java.io.BufferedReader
 import java.io.FileReader
@@ -9,8 +10,10 @@ import java.io.IOException
 open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String>) {
 	private val program: Int = glCreateProgram()
 	private val mvpLoc: Int
+	private val modelLoc: Int
 	private val uniformLocs: IntArray
-	private val internalMVP = FloatArray(16)
+	private val internalMVPArray = FloatArray(16)
+	private val internalMVP = Matrix4f()
 
 	init {
 		val vert = loadShader(vertPath, GL_VERTEX_SHADER)
@@ -23,6 +26,7 @@ open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String
 		glDeleteShader(vert)
 		glDeleteShader(frag)
 		mvpLoc = glGetUniformLocation(program, "mvp")
+		modelLoc = glGetUniformLocation(program, "model")
 		uniformLocs = IntArray(uniformNames.size)
 		for (i in uniformNames.indices) {
 			uniformLocs[i] = glGetUniformLocation(program, uniformNames[i])
@@ -51,8 +55,10 @@ open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String
 		return shader
 	}
 
-	fun setMVP(matrix: Matrix4f): Shader {
-		glUniformMatrix4fv(mvpLoc, false, matrix[internalMVP])
+	fun setMVP(projView: Matrix4f, model: Matrix4f): Shader {
+		projView.mul(model, internalMVP)
+		if (modelLoc != -1) glUniformMatrix4fv(modelLoc, false, model[internalMVPArray])
+		glUniformMatrix4fv(mvpLoc, false, internalMVP[internalMVPArray])
 		return this
 	}
 

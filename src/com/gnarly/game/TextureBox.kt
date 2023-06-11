@@ -69,10 +69,6 @@ class TextureBox(var x: Float, var y: Float, var width: Float, var height: Float
 	}
 }
 
-fun Camera.getMVP(textureBox: TextureBox): Matrix4f {
-	return getMVP(textureBox.x, textureBox.y, textureBox.width, textureBox.height)
-}
-
-fun Camera.getMP(textureBox: TextureBox): Matrix4f {
-	return getMP(textureBox.x, textureBox.y, textureBox.width, textureBox.height)
+fun Camera.boxModel(textureBox: TextureBox): Matrix4f {
+	return model(textureBox.x, textureBox.y, textureBox.width, textureBox.height)
 }

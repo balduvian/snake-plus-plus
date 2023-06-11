@@ -2,12 +2,10 @@
 
 layout (location = 0) uniform sampler2D level;
 
-uniform vec2 cameraDims;
 uniform float time;
 uniform vec2 levelSize;
 uniform vec3 colorPalette[4];
 
-in vec2 cameraUV;
 in vec2 worldUV;
 
 out vec4 fragColor;
@@ -190,10 +188,7 @@ vec4 getFinalColor() {
     vec4 glowColor = vec4(paletteLine(time * 0.25 + colorOffset), 1.0) * edgeHighlight;
     vec4 backgroundColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-    vec4 renderColor = inside * mix(insideColor, glowColor, edgeMix) + (1.0 - inside) * mix(backgroundColor, glowColor, edgeMix);
-
-    float fade = fadeDim(cameraUV.x, 2.0, 0.0, cameraDims.x) * fadeDim(cameraUV.y, 2.0, 0.0, cameraDims.y);
-    return mix(vec4(0.0, 0.0, 0.0, 1.0), renderColor, fade);
+    return inside * mix(insideColor, glowColor, edgeMix) + (1.0 - inside) * mix(backgroundColor, glowColor, edgeMix);
 }
 
 /* -------------------------------------------------- */

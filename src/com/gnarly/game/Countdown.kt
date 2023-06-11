@@ -18,7 +18,7 @@ class Countdown(var time: Float) {
 
 		val scale = (time % 1.0f) * 0.75f + 0.25f
 
-		Assets.textureShader.enable().setMVP(camera.getMPCentered(
+		Assets.textureShader.enable().setMVP(camera.projection(), camera.modelCentered(
 			camera.width / 2.0f,
 			camera.height / 2.0f,
 			width * scale,

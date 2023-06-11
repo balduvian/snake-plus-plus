@@ -7,6 +7,7 @@ import com.gnarly.engine.Window
 import com.gnarly.engine.audio.Sound
 import org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE
 import org.lwjgl.glfw.GLFW.GLFW_PRESS
+import kotlin.math.PI
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.random.Random
@@ -27,6 +28,10 @@ class GamePanel : Scene {
 		0.348f, -0.222f, -0.722f,
 	)
 
+	val winPalette = floatArrayOf(
+		-1.572f, 1.088f, 0.500f,0.000f, 0.500f, 0.500f, 0.000f, 0.333f, 0.500f, 0.000f, 0.667f, 0.500f,
+	)
+
 	lateinit var countdown: Countdown
 	var state: Int = 0
 	var levelIndex = 0
@@ -39,6 +44,7 @@ class GamePanel : Scene {
 	private var tilesPerSecond = 1
 	private var shouldSwitch = false
 
+	var winTimer = 0.0f
 	var cameraShake = 0.0f
 
 	var time = 0.0f
@@ -68,12 +74,14 @@ class GamePanel : Scene {
 
 		Assets.countdownMusic.play(false)
 		Assets.deathMusic.stop()
+		Assets.winMusic.stop()
 
 		countdown = Countdown(3.0f)
 		state = STATE_COUNTDOWN
 		time = 0.0f
 		moveTime = 0.0f
 		cameraShake = 0.0f
+		winTimer = 0.0f
 	}
 
 	fun timePerMove() = 1.0f / tilesPerSecond
@@ -96,6 +104,8 @@ class GamePanel : Scene {
 					when (map.access(on.x, on.y)) {
 						MapTemplate.TYPE_END -> {
 							snake.reduceToNothing()
+							music?.stop()
+							Assets.winMusic.play(false)
 							state = STATE_WIN
 						}
 						MapTemplate.TYPE_LENGTH -> {
@@ -139,6 +149,8 @@ class GamePanel : Scene {
 			}
 
 		} else if (state == STATE_RETRY || state == STATE_WIN) {
+			winTimer += delta
+
 			val texture = if (state == STATE_RETRY) Assets.retryTexture else Assets.nextTexture
 
 			val buttonBox = TextureBox.fromTexture(texture)
@@ -156,6 +168,12 @@ class GamePanel : Scene {
 		}
 
 		val cameraOffset = Vector((Random.nextFloat() * 2.0f - 1.0f) * cameraShake, (Random.nextFloat() * 2.0f - 1.0f) * cameraShake)
+
+		val cameraRotation = (PI.toFloat() / 4.0f) - 1.0f / (winTimer + (4.0f / PI.toFloat()))
+		val cameraScale = 0.5f + 1.0f / (winTimer + 2.0f)
+		camera.scale = cameraScale
+		camera.rotation = cameraRotation
+
 		camera.setCenter(snake.getCameraPos(moveAlong()) + cameraOffset)
 
 		cameraShake -= delta
@@ -163,13 +181,13 @@ class GamePanel : Scene {
 	}
 
 	fun renderDark(camera: Camera, opacity: Float) {
-		Assets.colorShader.enable().setMVP(camera.getMP(0.0f, 0.0f, camera.width, camera.height))
+		Assets.colorShader.enable().setMVP(camera.projection(), camera.model(0.0f, 0.0f, camera.width, camera.height))
 		Assets.colorShader.setColor(0.0f, 0.0f, 0.0f, opacity)
 		Assets.rect.render()
 	}
 
 	override fun render(window: Window, camera: Camera, delta: Float) {
-		map.render(camera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else null)
+		map.render(camera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null)
 		snake.render(camera, moveAlong())
 
 		val reminderScale = sin(0.5f * Math.PI.toFloat() * time) / 8.0f + 0.875f
@@ -186,14 +204,14 @@ class GamePanel : Scene {
 			button.render(camera, Assets.retryTexture, time)
 
 			Assets.spaceRetryTexture.bind()
-			Assets.textureShader.enable().setMVP(camera.getMP(reminderBox))
+			Assets.textureShader.enable().setMVP(camera.projection(), camera.boxModel(reminderBox))
 			Assets.rect.render()
 
 		} else if (state == STATE_WIN) {
 			button.render(camera, Assets.nextTexture, time)
 
 			Assets.spaceContinueTexture.bind()
-			Assets.textureShader.enable().setMVP(camera.getMP(reminderBox))
+			Assets.textureShader.enable().setMVP(camera.projection(), camera.boxModel(reminderBox))
 			Assets.rect.render()
 		}
 	}

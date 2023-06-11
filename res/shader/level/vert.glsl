@@ -1,18 +1,13 @@
 #version 460 core
 
-layout (location = 0) in vec3 vertices;
+layout (location = 0) in vec3 vertex;
 
 uniform mat4 mvp;
+uniform mat4 model;
 
-uniform vec2 cameraDims;
-uniform vec2 offset;
-
-out vec2 cameraUV;
 out vec2 worldUV;
 
 void main() {
-	cameraUV = vertices.xy * cameraDims;
-	worldUV = vertices.xy * cameraDims + offset;
-
-	gl_Position = mvp * vec4(vertices, 1.0);
+	worldUV = (model * vec4(vertex, 1.0)).xy;
+	gl_Position = mvp * vec4(vertex, 1.0);
 }
