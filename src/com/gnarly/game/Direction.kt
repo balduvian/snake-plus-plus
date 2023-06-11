@@ -1,6 +1,7 @@
 package com.gnarly.game
 
 import com.gnarly.engine.Vector
+import com.gnarly.game.Util.posMod
 import kotlin.math.PI
 
 enum class Direction(val point: Point, val rotation: Float) {
@@ -10,6 +11,8 @@ enum class Direction(val point: Point, val rotation: Float) {
 	DOWN(Point(0, -1), 3.0f * PI.toFloat() / 2.0f);
 
 	fun inverse() = values()[(ordinal + 2) % 4]
+	fun rotateLeft() = values()[(ordinal + 1) % 4]
+	fun rotateRight() = values()[posMod((ordinal - 1), 4)]
 }
 
 data class Point(val x: Int, val y: Int) {

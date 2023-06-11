@@ -28,7 +28,7 @@ object Assets {
 	lateinit var spaceRetryTexture: Texture
 
 	lateinit var menuMapTemplate: MapTemplate
-	lateinit var mapTemplates: List<MapTemplate>
+	lateinit var levelMapTemplates: List<MapTemplate>
 
 	lateinit var menuMusic: Sound
 	lateinit var deathMusic: Sound
@@ -68,11 +68,16 @@ object Assets {
 		spaceContinueTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/space-continue.png"))).defaultParams()
 		spaceRetryTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/space-retry.png"))).defaultParams()
 
-		menuMapTemplate = MapTemplate(File("res/texture/menu-level.png"), File("res/audio/menu.wav"))
-		mapTemplates = File("res/level").listFiles()!!.sortedBy { it.name }.mapNotNull { folder ->
-			if (!folder.isDirectory) return@mapNotNull null
-			MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"))
+		fun loadLevel(folder: File): MapTemplate {
+			return MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"), folder.resolve("data.txt"))
 		}
+
+		menuMapTemplate = loadLevel(File("res/level/menu"))
+		levelMapTemplates = File("res/level")
+			.listFiles()!!
+			.filter { it.name.startsWith("level") }
+			.sortedBy { it.name.substring(5).toInt() }
+			.mapNotNull { folder -> if (folder.isDirectory) loadLevel(folder) else null }
 
 		menuMusic = Sound(File("res/audio/menu.wav"))
 		deathMusic = Sound(File("res/audio/death.wav"))

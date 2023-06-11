@@ -1,12 +1,12 @@
 package com.gnarly.game
 
-import com.gnarly.engine.Texture
 import com.gnarly.engine.audio.Sound
-import org.lwjgl.opengl.GL46.*
 import java.io.File
 import javax.imageio.ImageIO
 
-class MapTemplate(levelFile: File, soundFile: File) {
+class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
+	data class Data(val snakeSpeed: Int, val palette: FloatArray, val wrap: Boolean)
+
 	companion object {
 		const val TYPE_EMPTY = 0
 		const val TYPE_WALL = 1
@@ -19,6 +19,38 @@ class MapTemplate(levelFile: File, soundFile: File) {
 		const val INT_WALL = 0x00ff00ff
 		const val INT_LENGTH = 0x400000ff
 		const val INT_SPEED = 0x7f0000ff
+
+		fun readDataFile(dataFile: File): Data {
+			var snakeSpeed: Int? = null
+			var palette: FloatArray? = null
+			var wrap: Boolean? = null
+
+			val lines = dataFile.readLines()
+
+			lines.forEach { line ->
+				val parts = line.split("=").map { it.trim() }
+
+				if (parts.size != 2) return@forEach
+
+				if (parts[0] == "snakeSpeed") {
+					snakeSpeed = parts[1].toInt()
+				} else if (parts[0] == "palette") {
+					palette = parts[1]
+						.split(Regex("[\\[\\] ]+"))
+						.filter { it.isNotEmpty() }
+						.map { it.toFloat() }
+						.toFloatArray()
+				} else if (parts[0] == "wrap") {
+					wrap = parts[1].toBoolean()
+				}
+			}
+
+			return Data(
+				snakeSpeed ?: throw Exception("no 'snakeSpeed' defined in datafile $dataFile"),
+				palette ?: throw Exception("no 'palette' defined in datafile $dataFile"),
+				wrap ?: throw Exception("no 'wrap' defined in datafile $dataFile"),
+			)
+		}
 	}
 
 	val width: Int
@@ -27,8 +59,10 @@ class MapTemplate(levelFile: File, soundFile: File) {
 	var snakeStartDir: Direction = Direction.RIGHT
 	val map: IntArray
 	val music: Sound
+	val data: Data
 
 	init {
+		data = readDataFile(dataFile)
 		music = Sound(soundFile)
 
 		val image = ImageIO.read(levelFile)
@@ -59,23 +93,7 @@ class MapTemplate(levelFile: File, soundFile: File) {
 		}
 	}
 
-	fun writeDataTexture(texture: Texture, wrap: Boolean = false): Texture {
-		val textureWrap = if (wrap) GL_REPEAT else GL_CLAMP_TO_EDGE
-		texture.parameters(GL_NEAREST, GL_NEAREST, textureWrap, textureWrap)
-		texture.setImage(width, height, IntArray(width * height) { i ->
-			when (map[i]) {
-				TYPE_EMPTY -> INT_EMPTY
-				TYPE_WALL -> INT_WALL
-				TYPE_LENGTH -> INT_LENGTH
-				TYPE_SPEED -> INT_SPEED
-				else -> INT_EMPTY
-			}
-		})
-
-		return texture
-	}
-
 	fun toMap(): Map {
-		return Map(width, height, map.clone())
+		return Map(width, height, map.clone(), data.palette, data.wrap)
 	}
 }

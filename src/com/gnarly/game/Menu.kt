@@ -18,7 +18,6 @@ class Menu : Scene {
 	var time = 0.0f
 
 	init {
-		Assets.menuMapTemplate.writeDataTexture(dataTexture, wrap = true)
 		Assets.menuMusic.play(true)
 		Assets.menuMusic.setVolume(1.0f)
 	}
@@ -62,7 +61,7 @@ class Menu : Scene {
 
 	override fun render(window: Window, camera: Camera, delta: Float) {
 		glDisable(GL_DEPTH_TEST)
-		map.render(camera, true, time, dataTexture)
+		map.render(camera, time, dataTexture)
 
 		val logoBox = TextureBox.fromTexture(Assets.logoTexture)
 			.setCenterX(camera.width / 2.0f)

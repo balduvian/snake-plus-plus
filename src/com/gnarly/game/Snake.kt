@@ -10,17 +10,36 @@ class Snake(
     var lengthToAdd: Int,
     initialPoint: Point
 ) {
+	class InputBuffer() {
+		var primary: Direction? = null
+		var secondary: Direction? = null
+
+		fun pop(): Direction? {
+			if (primary != null) {
+				val ret = primary
+				primary = null
+				return ret
+			} else if (secondary != null) {
+				val ret = secondary
+				secondary = null
+				return ret
+			}
+
+			return null
+		}
+	}
+
 	var fallbackPoint = initialPoint
 
 	data class Segment(var direction: Direction, var point: Point)
 
-	private var bufferedDirection: Direction? = null
+	private val inputBuffer = InputBuffer()
 	private val snake: ArrayList<Segment> = arrayListOf(Segment(futureDirection, initialPoint))
 
-	fun update(window: Window, allowInput: Boolean, addSegment: Boolean) {
+	fun update(window: Window, allowInput: Boolean, addSegment: Boolean, map: Map) {
 		if (addSegment && snake.isNotEmpty()) {
 			if (lengthToAdd >= 0) {
-				val newDirection = bufferedDirection ?: futureDirection
+				val newDirection = inputBuffer.pop() ?: futureDirection
 				val newPoint = snake.first().point + futureDirection.point
 
 				snake.add(0, Segment(newDirection, newPoint))
@@ -37,23 +56,37 @@ class Snake(
 			} else {
 				--lengthToAdd
 			}
-
-			bufferedDirection = null
 		}
 
 		if (allowInput) {
-			val inputDirection = if (window.key(GLFW_KEY_LEFT) >= GLFW_PRESS || window.key(GLFW_KEY_A) >= GLFW_PRESS)
-				Direction.LEFT
-			else if (window.key(GLFW_KEY_RIGHT) >= GLFW_PRESS || window.key(GLFW_KEY_D) >= GLFW_PRESS)
-				Direction.RIGHT
-			else if (window.key(GLFW_KEY_UP) >= GLFW_PRESS || window.key(GLFW_KEY_W) >= GLFW_PRESS)
-				Direction.UP
-			else if (window.key(GLFW_KEY_DOWN) >= GLFW_PRESS || window.key(GLFW_KEY_S) >= GLFW_PRESS)
-				Direction.DOWN
-			else null
+			val inputtedDirections = arrayOf(
+				window.key(GLFW_KEY_RIGHT) >= GLFW_PRESS || window.key(GLFW_KEY_D) >= GLFW_PRESS,
+				window.key(GLFW_KEY_UP) >= GLFW_PRESS || window.key(GLFW_KEY_W) >= GLFW_PRESS,
+				window.key(GLFW_KEY_LEFT) >= GLFW_PRESS || window.key(GLFW_KEY_A) >= GLFW_PRESS,
+				window.key(GLFW_KEY_DOWN) >= GLFW_PRESS || window.key(GLFW_KEY_S) >= GLFW_PRESS
+			)
 
-			if (inputDirection != null && inputDirection != futureDirection.inverse()) {
-				bufferedDirection = inputDirection
+			val primaryLeft = futureDirection.rotateLeft()
+			val primaryRight = futureDirection.rotateRight()
+
+			/* trying to turn in both directions at the same time */
+			if (inputtedDirections[primaryLeft.ordinal] && inputtedDirections[primaryRight.ordinal]) {
+				return
+			}
+
+			val primary = if (inputtedDirections[primaryLeft.ordinal]) primaryLeft
+				else if (inputtedDirections[primaryRight.ordinal]) primaryRight
+				else null
+
+			if (inputBuffer.primary == null) {
+				if (primary != null) {
+					val wallCheckPos = snake.first().point + futureDirection.point + primary.point
+					if (map.access(wallCheckPos.x, wallCheckPos.y) != MapTemplate.TYPE_WALL) {
+						inputBuffer.primary = primary
+					}
+				}
+			} else {
+				primary?.let { inputBuffer.primary = it }
 			}
 		}
 	}

@@ -51,20 +51,19 @@ class GamePanel : Scene {
 	private fun startMap(levelIndex: Int) {
 		music?.stop()
 
-		if (levelIndex == Assets.mapTemplates.size) {
+		if (levelIndex == Assets.levelMapTemplates.size) {
 			shouldSwitch = true
 			return
 		}
 
 		this.levelIndex = levelIndex
 
-		Assets.mapTemplates[levelIndex].let { mapTemplate ->
+		Assets.levelMapTemplates[levelIndex].let { mapTemplate ->
 			map = mapTemplate.toMap()
 			val music = mapTemplate.music
 			this.music = music
-			mapTemplate.writeDataTexture(levelDataTexture)
-
 			snake = Snake(mapTemplate.snakeStartDir, 10, mapTemplate.snakeStartPos)
+			tilesPerSecond = mapTemplate.data.snakeSpeed
 		}
 
 		Assets.countdownMusic.play(false)
@@ -74,7 +73,6 @@ class GamePanel : Scene {
 		state = STATE_COUNTDOWN
 		time = 0.0f
 		moveTime = 0.0f
-		tilesPerSecond = 7
 		cameraShake = 0.0f
 	}
 
@@ -88,16 +86,26 @@ class GamePanel : Scene {
 			moveTime += delta
 
 			val addSegment = moveTime >= timePerMove()
-			snake.update(window, state == STATE_GOING, addSegment)
+			snake.update(window, state == STATE_GOING, addSegment, map)
 			if (addSegment) {
 				moveTime -= timePerMove()
 
 				if (state == STATE_GOING) {
 					val on = snake.getOn()
 
-					if (map.access(on.x, on.y, false) == MapTemplate.TYPE_END) {
-						snake.reduceToNothing()
-						state = STATE_WIN
+					when (map.access(on.x, on.y)) {
+						MapTemplate.TYPE_END -> {
+							snake.reduceToNothing()
+							state = STATE_WIN
+						}
+						MapTemplate.TYPE_LENGTH -> {
+							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
+							snake.lengthen(10)
+						}
+						MapTemplate.TYPE_SPEED -> {
+							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
+							tilesPerSecond += 2
+						}
 					}
 				}
 			}
@@ -120,21 +128,13 @@ class GamePanel : Scene {
 				music?.stop()
 				Assets.deathMusic.play(false)
 
-			} else when (map.access(movingInto.x, movingInto.y, false)) {
+			} else when (map.access(movingInto.x, movingInto.y)) {
 				MapTemplate.TYPE_WALL -> {
 					state = STATE_RETRY
 					snake.reduceToNothing()
 					cameraShake = tilesPerSecond / 10.0f
 					music?.stop()
 					Assets.deathMusic.play(false)
-				}
-				MapTemplate.TYPE_LENGTH -> {
-					map.map[map.indexOf(movingInto.x, movingInto.y)] = MapTemplate.TYPE_EMPTY
-					snake.lengthen(10)
-				}
-				MapTemplate.TYPE_SPEED -> {
-					map.map[map.indexOf(movingInto.x, movingInto.y)] = MapTemplate.TYPE_EMPTY
-					tilesPerSecond += 2
 				}
 			}
 
@@ -169,7 +169,7 @@ class GamePanel : Scene {
 	}
 
 	override fun render(window: Window, camera: Camera, delta: Float) {
-		map.render(camera, false, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else null)
+		map.render(camera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else null)
 		snake.render(camera, moveAlong())
 
 		val reminderScale = sin(0.5f * Math.PI.toFloat() * time) / 8.0f + 0.875f
