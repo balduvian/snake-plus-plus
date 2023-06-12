@@ -39,6 +39,7 @@ class GamePanel : Scene {
 	lateinit var snake: Snake
 	val levelDataTexture = Texture.empty()
 	private var tilesPerSecond = 1
+	private var tempTilesPerSecond: Int? = null
 	private var shouldSwitch = false
 
 	var winTimer = 0.0f
@@ -54,7 +55,7 @@ class GamePanel : Scene {
 	var transition: Transition? = null
 
 	init {
-		startMap(0)
+		startMap(4)
 	}
 
 	override fun resized(window: Window, width: Int, height: Int) {
@@ -100,8 +101,17 @@ class GamePanel : Scene {
 		transition = Transition(0.0f, levelIndex, false)
 	}
 
-	fun timePerMove() = 1.0f / tilesPerSecond
-	fun moveAlong() = moveTime * tilesPerSecond
+	fun effectiveTilesPerSecond() = tempTilesPerSecond ?: tilesPerSecond
+	fun timePerMove() = 1.0f / effectiveTilesPerSecond()
+	fun moveAlong() = moveTime * effectiveTilesPerSecond()
+
+	fun die() {
+		state = STATE_RETRY
+		snake.reduceToNothing()
+		cameraShake = effectiveTilesPerSecond() / 10.0f
+		music?.stop()
+		Assets.deathMusic.play(false)
+	}
 
 	override fun update(window: Window, delta: Float) {
 		time += delta
@@ -113,6 +123,10 @@ class GamePanel : Scene {
 			snake.update(window, state == STATE_GOING, addSegment, map)
 			if (addSegment) {
 				moveTime -= timePerMove()
+				if (tempTilesPerSecond != null && snake.lengthToAdd == 0) {
+					tempTilesPerSecond = null
+					moveTime = 0.0f
+				}
 
 				if (state == STATE_GOING) {
 					val on = snake.getOn()
@@ -132,6 +146,22 @@ class GamePanel : Scene {
 							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
 							tilesPerSecond += 2
 						}
+						MapTemplate.TYPE_LENGTH_DOWN -> {
+							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
+							snake.lengthen(-10)
+							tempTilesPerSecond = (tilesPerSecond + 10).coerceAtMost(20)
+						}
+						MapTemplate.TYPE_SPEED_DOWN -> {
+							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
+							tilesPerSecond -= 2
+							if (tilesPerSecond <= 0) {
+								tempTilesPerSecond = 10
+								die()
+							}
+						}
+						MapTemplate.TYPE_SWITCH -> {
+							map.onState = !map.onState
+						}
 					}
 				}
 			}
@@ -147,25 +177,16 @@ class GamePanel : Scene {
 		} else if (state == STATE_GOING) {
 			val movingInto = snake.getMovingInto()
 
-			if (snake.bodyContains(movingInto)) {
-				state = STATE_RETRY
-				snake.reduceToNothing()
-				cameraShake = tilesPerSecond / 10.0f
-				music?.stop()
-				Assets.deathMusic.play(false)
-
-			} else when (map.access(movingInto.x, movingInto.y)) {
-				MapTemplate.TYPE_WALL -> {
-					state = STATE_RETRY
-					snake.reduceToNothing()
-					cameraShake = tilesPerSecond / 10.0f
-					music?.stop()
-					Assets.deathMusic.play(false)
-				}
+			if (snake.length() <= 1 && snake.lengthToAdd <= 0) {
+				die()
+			} else if (snake.bodyContains(movingInto)) {
+				die()
+			} else if (map.isSolid(map.access(movingInto.x, movingInto.y))) {
+				die()
 			}
 
 			if (window.key(GLFW_KEY_R) >= GLFW_PRESS && transition == null) {
-				startTransition(levelIndex)
+				die()
 			}
 
 		} else if (state == STATE_RETRY || state == STATE_WIN) {

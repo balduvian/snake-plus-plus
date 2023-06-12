@@ -14,11 +14,18 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 		const val TYPE_END = 3
 		const val TYPE_LENGTH = 4
 		const val TYPE_SPEED = 5
+		const val TYPE_SWITCH = 6
+		const val TYPE_ON_OFF_1 = 7
+		const val TYPE_ON_OFF_2 = 8
+		const val TYPE_SPEED_DOWN = 9
+		const val TYPE_LENGTH_DOWN = 10
 
-		const val INT_EMPTY = 0x000000ff
-		const val INT_WALL = 0x00ff00ff
-		const val INT_LENGTH = 0x400000ff
-		const val INT_SPEED = 0x7f0000ff
+		const val INT_EMPTY       = 0x000000ff
+		const val INT_WALL        = 0x00ff00ff
+		const val INT_LENGTH      = 0x010000ff // 1
+		const val INT_SPEED       = 0x020000ff // 2
+		const val INT_LENGTH_DOWN = 0x030000ff // 3
+		const val INT_SPEED_DOWN  = 0x040000ff // 4
 
 		fun readDataFile(dataFile: File): Data {
 			var snakeSpeed: Int? = null
@@ -87,6 +94,11 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 					0xff0000 -> map[index] = TYPE_END
 					0x0000ff -> map[index] = TYPE_LENGTH
 					0xff7f00 -> map[index] = TYPE_SPEED
+					0xff00ff -> map[index] = TYPE_SWITCH
+					0x007f7f -> map[index] = TYPE_ON_OFF_1
+					0x7f0000 -> map[index] = TYPE_ON_OFF_2
+					0xffff00 -> map[index] = TYPE_SPEED_DOWN
+					0x007fff -> map[index] = TYPE_LENGTH_DOWN
 					else -> map[index] = TYPE_EMPTY
 				}
 			}
@@ -94,6 +106,6 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 	}
 
 	fun toMap(): Map {
-		return Map(width, height, map.clone(), data.palette, data.wrap)
+		return Map(width, height, map.clone(), data.palette, data.wrap, true)
 	}
 }

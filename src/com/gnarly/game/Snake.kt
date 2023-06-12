@@ -37,6 +37,8 @@ class Snake(
 	private val inputBuffer = InputBuffer()
 	private val snake: ArrayList<Segment> = arrayListOf(Segment(futureDirection, initialPoint))
 
+	fun length() = snake.size
+
 	fun update(window: Window, allowInput: Boolean, addSegment: Boolean, map: Map) {
 		if (addSegment && snake.isNotEmpty()) {
 			if (lengthToAdd >= 0) {
@@ -82,7 +84,7 @@ class Snake(
 			if (inputBuffer.primary == null) {
 				if (primary != null) {
 					val wallCheckPos = snake.first().point + futureDirection.point + primary.point
-					if (map.access(wallCheckPos.x, wallCheckPos.y) != MapTemplate.TYPE_WALL) {
+					if (!map.isSolid(map.access(wallCheckPos.x, wallCheckPos.y))) {
 						inputBuffer.primary = primary
 					}
 				}

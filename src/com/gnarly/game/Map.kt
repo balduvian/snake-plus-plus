@@ -7,7 +7,7 @@ import org.lwjgl.opengl.GL46
 import kotlin.math.ceil
 import kotlin.math.floor
 
-class Map(val width: Int, val height: Int, val map: IntArray, val palette: FloatArray, val wrap: Boolean) {
+class Map(val width: Int, val height: Int, val map: IntArray, val palette: FloatArray, val wrap: Boolean, var onState: Boolean) {
 	val textureBuffer: IntArray = IntArray(map.size)
 
 	fun indexOf(x: Int, y: Int): Int {
@@ -22,6 +22,15 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 		}
 	}
 
+	fun isSolid(tile: Int): Boolean {
+		return when (tile) {
+			MapTemplate.TYPE_WALL -> true
+			MapTemplate.TYPE_ON_OFF_1 -> onState
+			MapTemplate.TYPE_ON_OFF_2 -> !onState
+			else -> false
+		}
+	}
+
 	fun writeDataTexture(texture: Texture): Texture {
 		val textureWrap = if (wrap) GL46.GL_REPEAT else GL46.GL_CLAMP_TO_EDGE
 		texture.parameters(GL46.GL_NEAREST, GL46.GL_NEAREST, textureWrap, textureWrap)
@@ -32,6 +41,8 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 				MapTemplate.TYPE_WALL -> MapTemplate.INT_WALL
 				MapTemplate.TYPE_LENGTH -> MapTemplate.INT_LENGTH
 				MapTemplate.TYPE_SPEED -> MapTemplate.INT_SPEED
+				MapTemplate.TYPE_SPEED_DOWN -> MapTemplate.INT_SPEED_DOWN
+				MapTemplate.TYPE_LENGTH_DOWN -> MapTemplate.INT_LENGTH_DOWN
 				else -> MapTemplate.INT_EMPTY
 			}
 		}
@@ -68,6 +79,30 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
 						)
 						Assets.colorShader.setColor(1.0f, 0.0f, 0.0f, 1.0f)
+						Assets.rect.render()
+					}
+					MapTemplate.TYPE_SWITCH -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+						)
+						Assets.colorShader.setColor(0.5f, 0.0f, 1.0f, 1.0f)
+						Assets.rect.render()
+					}
+					MapTemplate.TYPE_ON_OFF_1 -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+						)
+						Assets.colorShader.setColor(0.0f, 0.5f, 0.5f, if (onState) 1.0f else 0.25f)
+						Assets.rect.render()
+					}
+					MapTemplate.TYPE_ON_OFF_2 -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+						)
+						Assets.colorShader.setColor(0.5f, 0.0f, 0.0f, if (onState) 0.25f else 1.0f)
 						Assets.rect.render()
 					}
 				}
