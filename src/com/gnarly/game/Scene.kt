@@ -1,13 +1,14 @@
 package com.gnarly.game
 
-import com.gnarly.engine.Camera
 import com.gnarly.engine.Window
 import kotlin.reflect.KClass
 
 interface Scene {
-	fun update(window: Window, camera: Camera, delta: Float)
+	fun update(window: Window, delta: Float)
+
+	fun resized(window: Window, width: Int, height: Int)
 
 	fun swapScene(): KClass<*>?
 
-	fun render(window: Window, camera: Camera, delta: Float)
+	fun render(window: Window, delta: Float)
 }

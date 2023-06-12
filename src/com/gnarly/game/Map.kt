@@ -46,7 +46,7 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 
 		Assets.levelShader.enable().setMVP(
 			camera.projectionView(),
-			camera.model(camera.x - camera.width / 2.0f, camera.y - camera.height / 2.0f, camera.width * 2.0f, camera.height * 2.0f)
+			camera.model(camera.x - camera.width, camera.y - camera.height, camera.width * 2.0f, camera.height * 2.0f)
 		)
 		Assets.levelShader.setTime(time)
 			.setLevelSize(dataTexture.width - 1, dataTexture.height - 1)
@@ -54,10 +54,10 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 		dataTexture.bind()
 		Assets.rect.render()
 
-		val minX = floor(camera.x).toInt()
-		val minY = floor(camera.y).toInt()
-		val maxX = ceil(camera.x + camera.width).toInt()
-		val maxY = ceil(camera.y + camera.height).toInt()
+		val minX = floor(camera.x - camera.width / 2.0f).toInt()
+		val minY = floor(camera.y - camera.height / 2.0f).toInt()
+		val maxX = ceil(camera.x + camera.width / 2.0f).toInt()
+		val maxY = ceil(camera.y + camera.height / 2.0f).toInt()
 
 		for (y in minY..maxY) {
 			for (x in minX..maxX) {

@@ -1,11 +1,8 @@
 package com.gnarly.game
 
-import com.gnarly.engine.Camera
 import com.gnarly.engine.Window
 import com.gnarly.engine.audio.ALManagement
 import org.lwjgl.glfw.GLFW.*
-
-const val FULL_CAMERA_HEIGHT = 18f
 
 fun main() {
 	var lastTime: Long
@@ -13,11 +10,11 @@ fun main() {
 	val al = ALManagement()
 
 	val window = Window(1600, 900, "Snake++", true, true, true, false)
-	val camera = Camera().setDims(32.0f, 18.0f)
 
 	Assets.init()
 
 	var scene: Scene = Menu()
+	scene.resized(window, window.width, window.height)
 
 	lastTime = System.nanoTime()
 
@@ -29,30 +26,33 @@ fun main() {
 		/* update */
 		window.update()
 		if (window.wasResized()) {
-			val windowRatio = window.width.toFloat() / window.height.toFloat()
-			camera.setDims(windowRatio * FULL_CAMERA_HEIGHT, FULL_CAMERA_HEIGHT)
+			scene.resized(window, window.width, window.height)
 		}
+
 		if (window.key(GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			window.close()
 			break
 		}
 		if (window.key(GLFW_KEY_F11) == GLFW_PRESS) {
 			window.setFullScreen(!window.getFullScreen())
+			scene.resized(window, window.width, window.height)
 		}
-		scene.update(window, camera, delta)
-		camera.update()
+
+		scene.update(window, delta)
 
 		/* render */
 		window.clear()
-		scene.render(window, camera, delta)
+		scene.render(window, delta)
 		window.swap()
 
 		/* swap */
 		val swap = scene.swapScene()
 		if (swap == Menu::class) {
 			scene = Menu()
+			scene.resized(window, window.width, window.height)
 		} else if (swap == GamePanel::class) {
 			scene = GamePanel()
+			scene.resized(window, window.width, window.height)
 		}
 	}
 

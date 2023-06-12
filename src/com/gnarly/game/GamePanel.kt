@@ -5,11 +5,11 @@ import com.gnarly.engine.Texture
 import com.gnarly.engine.Vector
 import com.gnarly.engine.Window
 import com.gnarly.engine.audio.Sound
-import org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE
-import org.lwjgl.glfw.GLFW.GLFW_PRESS
+import org.lwjgl.glfw.GLFW.*
 import kotlin.math.PI
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.tan
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
@@ -22,10 +22,7 @@ class GamePanel : Scene {
 	}
 
 	val deadPalette = floatArrayOf(
-		0.848f, 0.288f, 0.078f,
-		-0.142f, 0.188f, 0.068f,
-		0.478f, 2.458f, 3.138f,
-		0.348f, -0.222f, -0.722f,
+		0.728f, 0.078f, 0.228f, 0.458f, 0.008f, -0.232f, -2.362f, -1.522f, -0.062f, 1.968f, 1.968f, -0.752f,
 	)
 
 	val winPalette = floatArrayOf(
@@ -50,12 +47,29 @@ class GamePanel : Scene {
 	var time = 0.0f
 	var moveTime = 0.0f
 
+	val uiCamera = Camera()
+	val mapCamera = Camera()
+
+	data class Transition(var time: Float, val toLevel: Int, var triggered: Boolean)
+	var transition: Transition? = null
+
 	init {
 		startMap(0)
 	}
 
+	override fun resized(window: Window, width: Int, height: Int) {
+		val ratio = width.toFloat() / height.toFloat()
+
+		val cameraWidth = ratio * Util.FULL_CAMERA_HEIGHT
+
+		uiCamera.setDims(0.0f, cameraWidth, 0.0f, Util.FULL_CAMERA_HEIGHT)
+		mapCamera.setDims(-cameraWidth / 2.0f, cameraWidth / 2.0f, -Util.FULL_CAMERA_HEIGHT / 2.0f, Util.FULL_CAMERA_HEIGHT / 2.0f)
+	}
+
 	private fun startMap(levelIndex: Int) {
 		music?.stop()
+		Assets.deathMusic.stop()
+		Assets.winMusic.stop()
 
 		if (levelIndex == Assets.levelMapTemplates.size) {
 			shouldSwitch = true
@@ -73,8 +87,6 @@ class GamePanel : Scene {
 		}
 
 		Assets.countdownMusic.play(false)
-		Assets.deathMusic.stop()
-		Assets.winMusic.stop()
 
 		countdown = Countdown(3.0f)
 		state = STATE_COUNTDOWN
@@ -84,10 +96,14 @@ class GamePanel : Scene {
 		winTimer = 0.0f
 	}
 
+	private fun startTransition(levelIndex: Int) {
+		transition = Transition(0.0f, levelIndex, false)
+	}
+
 	fun timePerMove() = 1.0f / tilesPerSecond
 	fun moveAlong() = moveTime * tilesPerSecond
 
-	override fun update(window: Window, camera: Camera, delta: Float) {
+	override fun update(window: Window, delta: Float) {
 		time += delta
 
 		if (state != STATE_COUNTDOWN) {
@@ -148,36 +164,55 @@ class GamePanel : Scene {
 				}
 			}
 
+			if (window.key(GLFW_KEY_R) >= GLFW_PRESS && transition == null) {
+				startTransition(levelIndex)
+			}
+
 		} else if (state == STATE_RETRY || state == STATE_WIN) {
 			winTimer += delta
 
 			val texture = if (state == STATE_RETRY) Assets.retryTexture else Assets.nextTexture
 
 			val buttonBox = TextureBox.fromTexture(texture)
-				.setCenterX(camera.width / 2.0f)
-				.setCenterY(camera.height * 0.75f)
-			button.update(window, camera, buttonBox.x, buttonBox.y, buttonBox.width, buttonBox.height)
+				.setCenterX(uiCamera.width / 2.0f)
+				.setCenterY(uiCamera.height * 0.75f)
+			button.update(window, uiCamera, buttonBox.x, buttonBox.y, buttonBox.width, buttonBox.height)
 
-			if (button.state == Button.PRESS || window.key(GLFW_KEY_SPACE) >= GLFW_PRESS) {
+			if (transition == null && (button.state == Button.PRESS || window.key(GLFW_KEY_SPACE) >= GLFW_PRESS)) {
 				if (state == STATE_RETRY) {
-					startMap(levelIndex)
+					startTransition(levelIndex)
 				} else {
-					startMap(levelIndex + 1)
+					startTransition(levelIndex + 1)
 				}
 			}
 		}
+
+		transition?.let { transition ->
+			transition.time += delta
+			if (!transition.triggered && transition.time >= 0.5f) {
+				transition.triggered = true
+				startMap(transition.toLevel)
+			}
+
+			if (transition.time >= 1.0f) {
+				this.transition = null
+			}
+		}
+
+		cameraShake -= delta
+		if (cameraShake < 0.0f) cameraShake = 0.0f
 
 		val cameraOffset = Vector((Random.nextFloat() * 2.0f - 1.0f) * cameraShake, (Random.nextFloat() * 2.0f - 1.0f) * cameraShake)
 
 		val cameraRotation = (PI.toFloat() / 4.0f) - 1.0f / (winTimer + (4.0f / PI.toFloat()))
 		val cameraScale = 0.5f + 1.0f / (winTimer + 2.0f)
-		camera.scale = cameraScale
-		camera.rotation = cameraRotation
+		mapCamera.scale = cameraScale
+		mapCamera.rotation = cameraRotation
 
-		camera.setCenter(snake.getCameraPos(moveAlong()) + cameraOffset)
+		mapCamera.setPosition(snake.getCameraPos(moveAlong()) + cameraOffset)
 
-		cameraShake -= delta
-		if (cameraShake < 0.0f) cameraShake = 0.0f
+		mapCamera.update()
+		uiCamera.update()
 	}
 
 	fun renderDark(camera: Camera, opacity: Float) {
@@ -186,32 +221,75 @@ class GamePanel : Scene {
 		Assets.rect.render()
 	}
 
-	override fun render(window: Window, camera: Camera, delta: Float) {
-		map.render(camera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null)
-		snake.render(camera, moveAlong())
+	override fun render(window: Window, delta: Float) {
+		map.render(mapCamera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null)
+		snake.render(mapCamera, moveAlong())
 
 		val reminderScale = sin(0.5f * Math.PI.toFloat() * time) / 8.0f + 0.875f
 		val reminderBox = TextureBox.fromTexture(Assets.spaceContinueTexture)
 			.scale(reminderScale)
-			.setCenterX(camera.width / 2.0f)
-			.setCenterY(camera.height * 0.25f)
+			.setCenterX(uiCamera.width / 2.0f)
+			.setCenterY(uiCamera.height * 0.25f)
 
 		if (state == STATE_COUNTDOWN) {
-			renderDark(camera, (0.7f * countdown.time.pow(1.0f / 3.0f)).coerceAtMost(1.0f))
-			countdown.render(camera, camera.width / 2.0f, camera.height / 2.0f, 5.0f, 5.0f)
+			renderDark(uiCamera, (0.7f * countdown.time.pow(1.0f / 3.0f)).coerceAtMost(1.0f))
+			countdown.render(uiCamera, uiCamera.width / 2.0f, uiCamera.height / 2.0f, 5.0f, 5.0f)
 
 		} else if (state == STATE_RETRY) {
-			button.render(camera, Assets.retryTexture, time)
+			button.render(uiCamera, Assets.retryTexture, time)
 
 			Assets.spaceRetryTexture.bind()
-			Assets.textureShader.enable().setMVP(camera.projection(), camera.boxModel(reminderBox))
+			Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(reminderBox))
 			Assets.rect.render()
 
 		} else if (state == STATE_WIN) {
-			button.render(camera, Assets.nextTexture, time)
+			button.render(uiCamera, Assets.nextTexture, time)
 
 			Assets.spaceContinueTexture.bind()
-			Assets.textureShader.enable().setMVP(camera.projection(), camera.boxModel(reminderBox))
+			Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(reminderBox))
+			Assets.rect.render()
+		}
+
+		transition?.let { transition ->
+			val angle = PI.toFloat() / 8.0f
+			val extent = uiCamera.height * tan(angle)
+
+			val halfWidth = uiCamera.width / 2.0f + extent
+
+			val centerX = Util.interp(-halfWidth, uiCamera.width + halfWidth, transition.time)
+
+			/* main box */
+			Assets.colorShader.enable().setMVP(uiCamera.projection(), uiCamera.modelCentered(centerX, uiCamera.height / 2.0f, uiCamera.width, uiCamera.height))
+			Assets.colorShader.setColor(0.0f, 0.0f, 0.0f, 1.0f)
+			Assets.rect.render()
+
+			/* behind leading edge */
+			Assets.colorShader.enable().setMVP(
+				uiCamera.projection(),
+				uiCamera.model.translation(centerX + uiCamera.width / 2.0f, 0.0f, 0.0f).scale(uiCamera.height)
+			)
+			Assets.colorShader.setColor(0.0f, 0.0f, 0.0f, 1.0f)
+			Assets.transitionTriangle.render()
+
+			/* behind trailing edge */
+			Assets.colorShader.enable().setMVP(
+				uiCamera.projection(),
+				uiCamera.model.translation(centerX - uiCamera.width / 2.0f, uiCamera.height, 0.0f).rotateZ(PI.toFloat()).scale(uiCamera.height))
+			Assets.colorShader.setColor(0.0f, 0.0f, 0.0f, 1.0f)
+			Assets.transitionTriangle.render()
+
+			/* leading edge */
+			val leadingVertex = Vector(centerX + uiCamera.width / 2.0f, 0.0f) + Vector(-1.0f, -1.0f).rotate(-angle)
+
+			Assets.transitionTexture.bind()
+			Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.model(leadingVertex.x, leadingVertex.y, 1.0f, uiCamera.height * 2.0f, -angle))
+			Assets.rect.render()
+
+			/* trailing edge */
+			val trailingVertex = Vector(centerX - uiCamera.width / 2.0f, uiCamera.height) + Vector(-1.0f, -1.0f).rotate(PI.toFloat() - angle)
+
+			Assets.transitionTexture.bind()
+			Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.model(trailingVertex.x, trailingVertex.y, 1.0f, uiCamera.height * 2.0f, PI.toFloat() - angle))
 			Assets.rect.render()
 		}
 	}
