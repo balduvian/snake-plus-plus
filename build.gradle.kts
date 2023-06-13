@@ -1,6 +1,6 @@
 plugins {
 	id("com.github.johnrengelman.shadow") version "7.1.2"
-	kotlin("jvm") version "1.8.21"
+	kotlin("jvm") version "1.8.22"
 	application
 }
 
@@ -50,6 +50,10 @@ tasks {
 	build {
 		dependsOn(shadowJar)
 	}
+}
+
+kotlin {
+	jvmToolchain(8)
 }
 
 application {
