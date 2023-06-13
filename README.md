@@ -52,13 +52,20 @@ There is no hardcoded number of levels in the game. You can add or delete as man
 
 Within each level folder is a file called `data.txt`. This file defines some additional parameters about the level apart from its physical construction.
 
-Each line in `data.txt` is formatted as `{propertyName} = {value}`. There are 3 properties of `data.txt`:
+Each line in `data.txt` is formatted as `{propertyName} = {value}`. The following is a guide to the required properties:
 
 * `snakeSpeed` An integer defining the initial speed in tiles per second that the snake moves
+* `snakeLength` An integer defining the initial length of the snake
 * `palette` The colors used to render the level, the format can be found in the output of http://dev.thi.ng/gradients/
 * `wrap` How to access the level out of bounds. `false` means the level will be bounded by walls. `true` means you can exit one side of the level and come out the other.
 
-More properties should be coming in the future.
+Example `data.txt`:
+```
+snakeSpeed = 7
+snakeLength = 10
+palette = [[0.241 0.158 0.987] [0.788 0.758 0.595] [1.136 1.551 0.674] [4.059 2.529 3.709]]
+wrap = false
+```
 
 ### `music.wav`
 

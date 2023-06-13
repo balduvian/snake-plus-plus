@@ -3,9 +3,10 @@ package com.gnarly.game
 import com.gnarly.engine.audio.Sound
 import java.io.File
 import javax.imageio.ImageIO
+import kotlin.math.E
 
 class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
-	data class Data(val snakeSpeed: Int, val palette: FloatArray, val wrap: Boolean)
+	data class Data(val snakeSpeed: Int, val snakeLength: Int, val palette: FloatArray, val wrap: Boolean)
 
 	companion object {
 		const val TYPE_EMPTY = 0
@@ -33,6 +34,7 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 
 		fun readDataFile(dataFile: File): Data {
 			var snakeSpeed: Int? = null
+			var snakeLength: Int? = null
 			var palette: FloatArray? = null
 			var wrap: Boolean? = null
 
@@ -43,21 +45,32 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 
 				if (parts.size != 2) return@forEach
 
-				if (parts[0] == "snakeSpeed") {
-					snakeSpeed = parts[1].toInt()
-				} else if (parts[0] == "palette") {
-					palette = parts[1]
-						.split(Regex("[\\[\\] ]+"))
-						.filter { it.isNotEmpty() }
-						.map { it.toFloat() }
-						.toFloatArray()
-				} else if (parts[0] == "wrap") {
-					wrap = parts[1].toBoolean()
+				when (parts[0].lowercase()) {
+					"snakespeed" -> {
+						snakeSpeed = parts[1].toIntOrNull() ?: throw Exception("could not read value for snakeSpeed in datafile $dataFile")
+					}
+					"snakelength" -> {
+						snakeLength = parts[1].toIntOrNull() ?: throw Exception("could not read value for snakeLength in datafile $dataFile")
+					}
+					"palette" -> {
+						palette = parts[1]
+							.split(Regex("[\\[\\] ]+"))
+							.filter { it.isNotEmpty() }
+							.map { it.toFloat() }
+							.toFloatArray()
+					}
+					"wrap" -> {
+						wrap = parts[1].toBoolean()
+					}
+					else -> {
+						println("Unknown property \"${parts[0]}\" in datafile $dataFile")
+					}
 				}
 			}
 
 			return Data(
 				snakeSpeed ?: throw Exception("no 'snakeSpeed' defined in datafile $dataFile"),
+				snakeLength ?: throw Exception("no 'snakeLength' defined in datafile $dataFile"),
 				palette ?: throw Exception("no 'palette' defined in datafile $dataFile"),
 				wrap ?: throw Exception("no 'wrap' defined in datafile $dataFile"),
 			)

@@ -86,7 +86,7 @@ class GamePanel : Scene {
 		map = levelTemplate.toMap()
 		val music = levelTemplate.music
 		this.music = music
-		snake = Snake(levelTemplate.snakeStartDir, 10, levelTemplate.snakeStartPos)
+		snake = Snake(levelTemplate.snakeStartDir, levelTemplate.data.snakeLength, levelTemplate.snakeStartPos)
 		tilesPerSecond = levelTemplate.data.snakeSpeed
 
 		Assets.countdownMusic.play(false)
