@@ -1,10 +1,11 @@
-#version 460 core
+#version 450 core
 
 layout (location = 0) uniform sampler2D level;
 
 uniform float time;
 uniform vec2 levelSize;
 uniform vec3 colorPalette[4];
+uniform bool wrap;
 
 in vec2 worldUV;
 
@@ -30,18 +31,32 @@ float fadeDim(float a, float border, float min, float max) {
 }
 
 const float DISTORT_SCALE = 8.0;
-const float POWERUP_LENGTH = 1.0 / 255.0;
-const float POWERUP_SPEED = 2.0 / 255.0;
-const float POWERUP_LENGTH_DOWN = 3.0 / 255.0;
-const float POWERUP_SPEED_DOWN = 4.0 / 255.0;
+
+const int POWERUP_LENGTH = 1;
+const int POWERUP_SPEED = 2;
+const int POWERUP_LENGTH_DOWN = 3;
+const int POWERUP_SPEED_DOWN = 4;
 
 /* */
-vec4 accessGrid(vec2 gridSpace) {
-    return texture(level, floor(gridSpace) / levelSize);
+
+ivec4 accessGrid(vec2 gridSpace) {
+   if (wrap) {
+       return ivec4(texelFetch(level, ivec2(mod(floor(gridSpace), levelSize)), 0) * vec4(255.0, 255.0, 255.0, 255.0));
+   } else {
+       vec2 bounds = step(vec2(0.0, 0.0), floor(gridSpace)) * step(floor(gridSpace), levelSize - vec2(1.0, 1.0));
+       float inside = bounds.x * bounds.y;
+
+       return ivec4(
+           (
+               inside * texelFetch(level, ivec2(floor(gridSpace)), 0) +
+               (1.0 - inside) * vec4(0.0, 1.0, 0.0, 1.0)
+           ) * vec4(255.0, 255.0, 255.0, 255.0)
+       );
+   }
 }
 
 float edgeValue(vec2 gridSpace, vec2 offset, float dist) {
-    float adjacent = abs(accessGrid(gridSpace).y - accessGrid(gridSpace + offset).y);
+    float adjacent = abs(accessGrid(gridSpace).y / 255.0 - accessGrid(gridSpace + offset).y / 255.0);
 
     float close = 1.0 - 2.0 * dist;
     return mix(0.0, close, adjacent);
@@ -71,122 +86,111 @@ float gridDistance(vec2 point) {
 }
 /* */
 
-/* */
-float isValue(float value, float supposedToBe) {
-    return step(supposedToBe - 0.0001, value) * step(value, supposedToBe + 0.0001);
+/* powerup primitives */
+
+float isValue(int value, int supposedToBe) {
+    return value == supposedToBe ? 1.0 : 0.0;
 }
 
-vec2 project(vec2 vec, vec2 onto) {
-    return onto * (dot(vec, onto) / ((onto.x * onto.x) + (onto.y * onto.y)));
+float distanceToLine(vec2 point, vec2 start, vec2 end) {
+    vec2 pa = point - start, ba = end - start;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
 }
 
-float distanceToLine(vec4 line, vec2 pos) {
-    float lineDistance = abs((line.z - line.x) * (line.y - pos.y) - (line.x - pos.x) * (line.w - line.y)) /
-    sqrt(pow(line.z - line.x, 2.0) + pow(line.w - line.y, 2.0));
-
-    vec2 lineVector = line.zw - line.xy;
-    vec2 pointVector = project(pos - line.xy, lineVector);
-
-    float inT = step(0.0, dot(lineVector, pointVector)) * step(length(pointVector), length(lineVector));
-
-    return inT * lineDistance + (1.0 - inT) * min(distance(pos, line.xy), distance(pos, line.zw));
+float distanceToRing(vec2 point, vec2 center, float radius) {
+    return abs(distance(point, center) - radius);
 }
 
-float lineValueAware(vec2 point, vec4 line, vec2 offset, float powerup) {
-    float hasPowerup = isValue(accessGrid(floor(point + offset)).x, powerup);
+float distanceToLineAware(vec2 point, vec2 start, vec2 end, vec2 offset, int powerup) {
+    float hasPowerup = isValue(accessGrid(point + offset).x, powerup);
 
     vec2 lineOffset = floor(point + offset) + vec2(0.5, 0.5);
 
-    float d = distanceToLine(line + lineOffset.xyxy, point);
-
-    return hasPowerup * max(1.0 - 2.0 * d, 0.0);
+    return (1.0 - hasPowerup) * 800.0 + distanceToLine(point, start + lineOffset, end + lineOffset);
 }
 
-float ringValue(vec2 point, vec2 center) {
-    return max(1.0 - 2.0 * abs(distance(point, center) - 0.3), 0.0);
-}
+float distanceToRingAware(vec2 point, vec2 offset, int powerup) {
+    float hasPowerup = isValue(accessGrid(point + offset).x, powerup);
 
-float ringValueAware(vec2 point, vec2 offset, float powerup) {
-    float hasPowerup = isValue(accessGrid(floor(point + offset)).x, powerup);
-
-    return hasPowerup * ringValue(point, floor(point + offset) + vec2(0.5, 0.5));
+    return (1.0 - hasPowerup) * 800.0 + distanceToRing(point, floor(point + offset) + vec2(0.5, 0.5), 0.3);
 }
 
 /* powerups */
 
-float closeToLengthPowerup(vec2 point) {
-    float value = max(
-        lineValueAware(point, vec4(0.0, -0.15, 0.0, 0.15), vec2(0.0, 0.0), POWERUP_LENGTH),
-        lineValueAware(point, vec4(-0.15, 0.0, 0.15, 0.0), vec2(0.0, 0.0), POWERUP_LENGTH)
+float distanceToLengthPowerup(vec2 point) {
+    float d = min(
+        distanceToLineAware(point, vec2(0.0, -0.15), vec2(0.0, 0.15), vec2(0.0, 0.0), POWERUP_LENGTH),
+        distanceToLineAware(point, vec2(-0.15, 0.0), vec2(0.15, 0.0), vec2(0.0, 0.0), POWERUP_LENGTH)
     );
 
-    value = max(value, ringValueAware(point, vec2(0.0, 0.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(-1.0, 0.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(-1.0, 1.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(0.0, 1.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(1.0, 1.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(1.0, 0.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(1.0, -1.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(0.0, -1.0), POWERUP_LENGTH));
-    value = max(value, ringValueAware(point, vec2(-1.0, -1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 0.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 0.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 0.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(1.0, -1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(0.0, -1.0), POWERUP_LENGTH));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, -1.0), POWERUP_LENGTH));
 
-    return value;
+    return d;
 }
 
-float closeToSpeedPowerup(vec2 point) {
-    float value = max(
-        lineValueAware(point, vec4(0.0, -0.15, 0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED),
-        lineValueAware(point, vec4(0.075, 0.075, 0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED)
+float distanceToSpeedPowerup(vec2 point) {
+    float d = min(
+        distanceToLineAware(point, vec2(0.0, -0.15), vec2(0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED),
+        distanceToLineAware(point, vec2(0.075, 0.075), vec2(0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED)
     );
-    value = max(value, lineValueAware(point, vec4(-0.075, 0.075, 0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED));
+    d = min(d, distanceToLineAware(point, vec2(-0.075, 0.075), vec2(0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED));
 
-    value = max(value, ringValueAware(point, vec2(0.0, 0.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(-1.0, 0.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(-1.0, 1.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(0.0, 1.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(1.0, 1.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(1.0, 0.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(1.0, -1.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(0.0, -1.0), POWERUP_SPEED));
-    value = max(value, ringValueAware(point, vec2(-1.0, -1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 0.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 0.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 0.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(1.0, -1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(0.0, -1.0), POWERUP_SPEED));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, -1.0), POWERUP_SPEED));
 
-    return value;
+    return d;
 }
 
-float closeToLengthDownPowerup(vec2 point) {
-    float value = lineValueAware(point, vec4(-0.15, 0.0, 0.15, 0.0), vec2(0.0, 0.0), POWERUP_LENGTH_DOWN);
+float distanceToLengthDownPowerup(vec2 point) {
+    float d = distanceToLineAware(point, vec2(-0.15, 0.0), vec2(0.15, 0.0), vec2(0.0, 0.0), POWERUP_LENGTH_DOWN);
 
-    value = max(value, ringValueAware(point, vec2(0.0, 0.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, 0.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, 1.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(0.0, 1.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, 1.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, 0.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, -1.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(0.0, -1.0), POWERUP_LENGTH_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, -1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 0.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 0.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 0.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, -1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, -1.0), POWERUP_LENGTH_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, -1.0), POWERUP_LENGTH_DOWN));
 
-    return value;
+    return d;
 }
 
-float closeToSpeedDownPowerup(vec2 point) {
-    float value = max(
-    lineValueAware(point, vec4(0.0, -0.15, 0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN),
-    lineValueAware(point, vec4(0.075, -0.075, 0.0, -0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN)
+float distanceToSpeedDownPowerup(vec2 point) {
+    float d = min(
+        distanceToLineAware(point, vec2(0.0, -0.15), vec2(0.0, 0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN),
+        distanceToLineAware(point, vec2(0.075, -0.075), vec2(0.0, -0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN)
     );
-    value = max(value, lineValueAware(point, vec4(-0.075, -0.075, 0.0, -0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToLineAware(point, vec2(-0.075, -0.075), vec2(0.0, -0.15), vec2(0.0, 0.0), POWERUP_SPEED_DOWN));
 
-    value = max(value, ringValueAware(point, vec2(0.0, 0.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, 0.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, 1.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(0.0, 1.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, 1.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, 0.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(1.0, -1.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(0.0, -1.0), POWERUP_SPEED_DOWN));
-    value = max(value, ringValueAware(point, vec2(-1.0, -1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 0.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 0.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, 1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, 1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, 0.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(1.0, -1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(0.0, -1.0), POWERUP_SPEED_DOWN));
+    d = min(d, distanceToRingAware(point, vec2(-1.0, -1.0), POWERUP_SPEED_DOWN));
 
-    return value;
+    return d;
 }
 
 /* */
@@ -195,37 +199,37 @@ vec4 getFinalColor() {
     float colorOffset = worldUV.x / 32.0 + worldUV.y / 32.0;
 
     /* inside outside check */
-    float inside = accessGrid(floor(worldUV)).y;
+    float inside = accessGrid(worldUV).y / 255.0;
 
     /* edge check */
     float edgeMix = gridDistance(worldUV);
 
-    float ring = 0.0;
+    float patternMix = 0.0;
     for (float i = 0.0; i < 3.0; ++i) {
         float posNeg = mod(i, 2.0) * 2.0 - 1.0;
         float scale = 0.25 * pow(1.5, i);
 
         vec2 fractionUV = fract(worldUV * vec2(scale, scale) - vec2(
-        (i + sin(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2,
-        (i + cos(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2
+            (i + sin(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2,
+            (i + cos(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2
         )) - vec2(0.5, 0.5);
 
         float centerDist = length(fractionUV);
-        ring += (0.005 / abs(sin(centerDist * 8.0 + (time + colorOffset * DISTORT_SCALE) * posNeg) / 8.0)) - (0.005 / 8.0);
+        patternMix += (0.005 / abs(sin(centerDist * 8.0 + (time + colorOffset * DISTORT_SCALE) * posNeg) / 8.0)) - (0.005 / 8.0);
     }
 
     /* powerup check */
-    float lengthPowerup = closeToLengthPowerup(worldUV);
-    float speedPowerup = closeToSpeedPowerup(worldUV);
-    float lengthDownPowerup = closeToLengthDownPowerup(worldUV);
-    float speedDownPowerup = closeToSpeedDownPowerup(worldUV);
-    float powerupMix = max(max(max(lengthPowerup, speedPowerup), lengthDownPowerup), speedDownPowerup);
+    float distanceToPowerup = min(distanceToLengthPowerup(worldUV), distanceToSpeedPowerup(worldUV));
+    distanceToPowerup = min(distanceToPowerup, distanceToLengthDownPowerup(worldUV));
+    distanceToPowerup = min(distanceToPowerup, distanceToSpeedDownPowerup(worldUV));
+
+    float powerupMix = max(1.0 - 2.0 * distanceToPowerup, 0.0);
 
     edgeMix = max(edgeMix, powerupMix);
 
     float edgeHighlight = 0.1 / (1.0 - edgeMix);
 
-    vec4 insideColor = vec4(paletteLine(time * 0.25 + colorOffset) * ring, 1.0);
+    vec4 insideColor = vec4(paletteLine(time * 0.25 + colorOffset) * patternMix, 1.0);
 
     vec4 glowColor = vec4(paletteLine(time * 0.25 + colorOffset), 1.0) * edgeHighlight;
     vec4 backgroundColor = vec4(0.0, 0.0, 0.0, 1.0);

@@ -21,7 +21,11 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 	val textureBuffer: IntArray = IntArray(map.size)
 
 	fun indexOf(x: Int, y: Int): Int {
-		return y * width + x
+		return if (wrap) {
+			return posMod(y, height) * width + posMod(x, width)
+		} else {
+			if (x < 0 || x >= width || y < 0 || y >= height) return 0 else y * width + x
+		}
 	}
 
 	fun access(x: Int, y: Int): Tile {
@@ -44,9 +48,7 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 	}
 
 	fun writeDataTexture(texture: Texture): Texture {
-		val textureWrap = if (wrap) GL46.GL_REPEAT else GL46.GL_CLAMP_TO_EDGE
-		texture.parameters(GL46.GL_NEAREST, GL46.GL_NEAREST, textureWrap, textureWrap)
-
+		texture.parameters(GL46.GL_NEAREST, GL46.GL_NEAREST, GL46.GL_CLAMP_TO_EDGE, GL46.GL_CLAMP_TO_EDGE)
 		for (i in textureBuffer.indices) {
 			textureBuffer[i] = when (map[i]) {
 				MapTemplate.TYPE_EMPTY -> MapTemplate.INT_EMPTY
@@ -72,8 +74,9 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 			camera.model(camera.x - camera.width, camera.y - camera.height, camera.width * 2.0f, camera.height * 2.0f)
 		)
 		Assets.levelShader.setTime(time)
-			.setLevelSize(dataTexture.width - 1, dataTexture.height - 1)
+			.setLevelSize(dataTexture.width, dataTexture.height)
 			.setcolorPalette(paletteOverride ?: palette)
+			.setWrap(wrap)
 		dataTexture.bind()
 		Assets.rect.render()
 
@@ -87,6 +90,14 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 				val tile = access(x, y)
 
 				when (tile.type) {
+					//MapTemplate.TYPE_WALL -> {
+					//	Assets.colorShader.enable().setMVP(
+					//		camera.projectionView(),
+					//		camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+					//	)
+					//	Assets.colorShader.setColor(1.0f, 1.0f, 1.0f, 0.75f)
+					//	Assets.rect.render()
+					//}
 					MapTemplate.TYPE_END -> {
 						Assets.colorShader.enable().setMVP(
 							camera.projectionView(),
