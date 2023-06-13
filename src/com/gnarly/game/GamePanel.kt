@@ -131,7 +131,7 @@ class GamePanel : Scene {
 				if (state == STATE_GOING) {
 					val on = snake.getOn()
 
-					when (map.access(on.x, on.y)) {
+					when (map.access(on.x, on.y).type) {
 						MapTemplate.TYPE_END -> {
 							snake.reduceToNothing()
 							music?.stop()
@@ -162,6 +162,10 @@ class GamePanel : Scene {
 						MapTemplate.TYPE_SWITCH -> {
 							map.onState = !map.onState
 						}
+						MapTemplate.TYPE_APPLE -> {
+							map.map[map.indexOf(on.x, on.y)] = MapTemplate.TYPE_EMPTY
+							++map.collectedApples
+						}
 					}
 				}
 			}
@@ -181,7 +185,7 @@ class GamePanel : Scene {
 				die()
 			} else if (snake.bodyContains(movingInto)) {
 				die()
-			} else if (map.isSolid(map.access(movingInto.x, movingInto.y))) {
+			} else if (map.isSolid(map.access(movingInto.x, movingInto.y), snake.futureDirection)) {
 				die()
 			}
 

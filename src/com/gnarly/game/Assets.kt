@@ -8,6 +8,8 @@ import com.gnarly.game.shader.ColorShader
 import com.gnarly.game.shader.LevelShader
 import com.gnarly.game.shader.ShinyShader
 import com.gnarly.game.shader.TextureShader
+import org.joml.Math.cos
+import org.joml.Math.sin
 import org.lwjgl.opengl.GL46.*
 import java.io.File
 import javax.imageio.ImageIO
@@ -21,6 +23,8 @@ object Assets {
 	lateinit var levelShader: LevelShader
 	lateinit var rect: Vao
 	lateinit var transitionTriangle: Vao
+	lateinit var oneWayTriangle: Vao
+	lateinit var circle: Vao
 
 	lateinit var countTextures: Array<Texture>
 
@@ -53,20 +57,35 @@ object Assets {
 		), intArrayOf(
 			0, 1, 2,
 			2, 3, 0,
-		)).addAttrib(floatArrayOf(
+		), GL_TRIANGLES).addAttrib(floatArrayOf(
 			0.0f, 1.0f,
 			1.0f, 1.0f,
 			1.0f, 0.0f,
 			0.0f, 0.0f,
 		), 2)
-
 		transitionTriangle = Vao(floatArrayOf(
 			0.0f, 0.0f, 0.0f,
 			tan(PI.toFloat() / 8.0f), 1.0f, 0.0f,
 			0.0f, 1.0f, 0.0f,
 		), intArrayOf(
 			0, 1, 2,
-		))
+		), GL_TRIANGLES)
+		oneWayTriangle = Vao(floatArrayOf(
+			0.5f * cos(0.0f), 0.5f * sin(0.0f), 0.0f,
+			0.5f * cos(2.0f * PI.toFloat() / 3.0f), 0.5f * sin(2.0f * PI.toFloat() / 3.0f), 0.0f,
+			0.5f * cos(4.0f * PI.toFloat() / 3.0f), 0.5f * sin(4.0f * PI.toFloat() / 3.0f), 0.0f,
+		), intArrayOf(
+			0, 1, 2
+		), GL_TRIANGLES)
+		circle = Vao(FloatArray(32 * 3) { i ->
+			if (i % 3 == 0) {
+				0.5f * cos(2.0f * PI.toFloat() * ((i / 3).toFloat() / 32.0f))
+			} else if (i % 3 == 1) {
+				0.5f * sin(2.0f * PI.toFloat() * ((i / 3).toFloat() / 32.0f))
+			} else {
+				0.0f
+			}
+		}, IntArray(32) { it }, GL_TRIANGLE_FAN)
 
 		fun Texture.defaultParams() = parameters(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE)
 

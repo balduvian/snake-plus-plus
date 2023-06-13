@@ -20,6 +20,10 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 		const val TYPE_SPEED_DOWN = 9
 		const val TYPE_LENGTH_DOWN = 10
 
+		const val TYPE_APPLE = 11
+		const val TYPE_APPLE_GATE = 12
+		const val TYPE_ONE_WAY = 13
+
 		const val INT_EMPTY       = 0x000000ff
 		const val INT_WALL        = 0x00ff00ff
 		const val INT_LENGTH      = 0x010000ff // 1
@@ -84,21 +88,34 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 				val y = height - j - 1
 				val index = y * width + x
 
-				when (val pixel = image.getRGB(x, j).and(0x00ffffff)) {
-					0xffffff -> map[index] = TYPE_WALL
-					in 0x00ff00..0x00ff03 -> {
+				val argb = image.getRGB(x, j)
+
+				val red = argb.ushr(16).and(0xff)
+				val gre = argb.ushr(8).and(0xff)
+				val blu = argb.and(0xff)
+
+				when {
+					red == 0xff && gre == 0xff && blu == 0xff -> map[index] = TYPE_WALL
+					red == 0x00 && gre == 0xff && blu in 0..3 -> {
 						map[index] = TYPE_START
 						snakeStartPos = Point(x, y)
-						snakeStartDir = Direction.values()[pixel and 0x03]
+						snakeStartDir = Direction.values()[blu]
 					}
-					0xff0000 -> map[index] = TYPE_END
-					0x0000ff -> map[index] = TYPE_LENGTH
-					0xff7f00 -> map[index] = TYPE_SPEED
-					0xff00ff -> map[index] = TYPE_SWITCH
-					0x007f7f -> map[index] = TYPE_ON_OFF_1
-					0x7f0000 -> map[index] = TYPE_ON_OFF_2
-					0xffff00 -> map[index] = TYPE_SPEED_DOWN
-					0x007fff -> map[index] = TYPE_LENGTH_DOWN
+					red == 0xff && gre == 0x00 && blu == 0x00 -> map[index] = TYPE_END
+					red == 0x00 && gre == 0x00 && blu == 0xff -> map[index] = TYPE_LENGTH
+					red == 0xff && gre == 0x7f && blu == 0x00 -> map[index] = TYPE_SPEED
+					red == 0xff && gre == 0x00 && blu == 0xff -> map[index] = TYPE_SWITCH
+					red == 0x00 && gre == 0x7f && blu == 0x7f -> map[index] = TYPE_ON_OFF_1
+					red == 0x7f && gre == 0x00 && blu == 0x00 -> map[index] = TYPE_ON_OFF_2
+					red == 0xff && gre == 0xff && blu == 0x00 -> map[index] = TYPE_SPEED_DOWN
+					red == 0x00 && gre == 0x7f && blu == 0xff -> map[index] = TYPE_LENGTH_DOWN
+					red == 0x00 && gre == 0x7f && blu == 0x00 -> map[index] = TYPE_APPLE
+					red in 0..3 && gre == 0xff && blu == 0x7f -> {
+						map[index] = TYPE_APPLE_GATE.or(red.shl(8))
+					}
+					red == 0x7f && gre in 0..3 && blu == 0x7f -> {
+						map[index] = TYPE_ONE_WAY.or(gre.shl(8))
+					}
 					else -> map[index] = TYPE_EMPTY
 				}
 			}

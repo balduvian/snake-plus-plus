@@ -8,25 +8,37 @@ import kotlin.math.ceil
 import kotlin.math.floor
 
 class Map(val width: Int, val height: Int, val map: IntArray, val palette: FloatArray, val wrap: Boolean, var onState: Boolean) {
+	var collectedApples = 0
+
+	data class Tile(val type: Int, val data: Int) {
+		companion object {
+			fun fromInt(int: Int): Tile {
+				return Tile(int.and(0xff), int.ushr(8).and(0xff))
+			}
+		}
+	}
+
 	val textureBuffer: IntArray = IntArray(map.size)
 
 	fun indexOf(x: Int, y: Int): Int {
 		return y * width + x
 	}
 
-	fun access(x: Int, y: Int): Int {
+	fun access(x: Int, y: Int): Tile {
 		return if (wrap) {
-			map[indexOf(posMod(x, width), posMod(y, height))]
+			Tile.fromInt(map[indexOf(posMod(x, width), posMod(y, height))])
 		} else {
-			if (x < 0 || x >= width || y < 0 || y >= height) MapTemplate.TYPE_WALL else map[indexOf(x, y)]
+			if (x < 0 || x >= width || y < 0 || y >= height) Tile(MapTemplate.TYPE_WALL, 0) else Tile.fromInt(map[indexOf(x, y)])
 		}
 	}
 
-	fun isSolid(tile: Int): Boolean {
-		return when (tile) {
+	fun isSolid(tile: Tile, direction: Direction): Boolean {
+		return when (tile.type) {
 			MapTemplate.TYPE_WALL -> true
 			MapTemplate.TYPE_ON_OFF_1 -> onState
 			MapTemplate.TYPE_ON_OFF_2 -> !onState
+			MapTemplate.TYPE_APPLE_GATE -> collectedApples < tile.data
+			MapTemplate.TYPE_ONE_WAY -> direction == Direction.values()[tile.data].inverse()
 			else -> false
 		}
 	}
@@ -72,7 +84,9 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 
 		for (y in minY..maxY) {
 			for (x in minX..maxX) {
-				when (access(x, y)) {
+				val tile = access(x, y)
+
+				when (tile.type) {
 					MapTemplate.TYPE_END -> {
 						Assets.colorShader.enable().setMVP(
 							camera.projectionView(),
@@ -103,6 +117,32 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
 						)
 						Assets.colorShader.setColor(0.5f, 0.0f, 0.0f, if (onState) 0.25f else 1.0f)
+						Assets.rect.render()
+					}
+					MapTemplate.TYPE_ONE_WAY -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model.translation(x.toFloat() + 0.5f, y.toFloat() + 0.5f, 0.0f)
+								.rotateZ(Direction.values()[tile.data].rotation)
+								.translate(-0.125f, 0.0f, 0.0f)
+						)
+						Assets.colorShader.setColor(1.0f, 0.0f, 0.5f, 1.0f)
+						Assets.oneWayTriangle.render()
+					}
+					MapTemplate.TYPE_APPLE -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x + 0.5f, y + 0.5f, 1.0f, 1.0f)
+						)
+						Assets.colorShader.setColor(0.0f, 0.75f, 0.0f, 1.0f)
+						Assets.circle.render()
+					}
+					MapTemplate.TYPE_APPLE_GATE -> {
+						Assets.colorShader.enable().setMVP(
+							camera.projectionView(),
+							camera.model(x.toFloat(), y.toFloat(), 1.0f, 1.0f)
+						)
+						Assets.colorShader.setColor(0.0f, 0.5f, 0.0f, if (collectedApples < tile.data) 1.0f else 0.25f)
 						Assets.rect.render()
 					}
 				}
