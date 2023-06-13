@@ -8,7 +8,7 @@ A continuation of Gnarwhal's submission for Ludum Dare 40
 
 The game requires at least [Java 8](https://www.java.com/en/) to run.
 
-To download the game, go to the [Releases](https://github.com/balduvian/snake-plus-plus-plus/releases) tab and download the latest release.
+To download the game, go to the [Releases](https://github.com/balduvian/snake-plus-plus/releases) tab and download the latest release.
 
 **Controls:**
 * WASD - turn the snake

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.gnarly"
-version = "1.0.0"
+version = "0.0.1"
 
 val lwjglVersion = "3.3.2"
 val jomlVersion = "1.10.5"
@@ -42,7 +42,7 @@ tasks {
 		enabled = false
 	}
 	shadowJar {
-		archiveFileName.set("${project.name}.jar")
+		archiveFileName.set("snake-plus-plus.jar")
 		manifest {
 			attributes(mapOf("Main-Class" to "com/gnarly/game/MainKt"))
 		}
