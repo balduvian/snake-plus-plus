@@ -55,7 +55,7 @@ class GamePanel : Scene {
 	var transition: Transition? = null
 
 	init {
-		startMap(4)
+		startMap(0)
 	}
 
 	override fun resized(window: Window, width: Int, height: Int) {

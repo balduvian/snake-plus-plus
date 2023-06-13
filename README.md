@@ -2,6 +2,8 @@
 
 A continuation of Narwhal's submission for Ludum Dare 40
 
+![Game Screenshot](game-screenshot.png)
+
 ## How to Play
 
 The game requires at least [Java 8](https://www.java.com/en/) to run.
@@ -33,6 +35,10 @@ In the game, levels will be played in the order of their number.
 
 There is no hardcoded number of levels in the game. You can add or delete as many as you want.
 
+<img src="level-folder-structure.png" width="200px"></img>
+
+*Proper level folder structure*
+
 ### `data.txt`
 
 Within each level folder is a file called `data.txt`. This file defines some additional parameters about the level apart from its physical construction.
@@ -58,7 +64,7 @@ Note that this is the part where the most new features are going to be pumped in
 The size of `level.png` is the size of the level in game. Each pixel represents one tile. The color of the pixel defines what kind of tile it is, and some additional data about the tile.
 The following is a guide on which colors correspond to which tiles.
 
-|                                                          | color      | Tile          | Description                                                       |
+|                                                          | Color      | Tile          | Description                                                       |
 |----------------------------------------------------------|------------|---------------|-------------------------------------------------------------------|
 | ![#000000](https://placehold.co/15x15/000000/000000.png) | `0x000000` | Blank         | Nothing here, passable by the snake                               |
 | ![#ffffff](https://placehold.co/15x15/ffffff/ffffff.png) | `0xffffff` | Wall          | Not passable by the snake                                         |
@@ -76,11 +82,11 @@ The following is a guide on which colors correspond to which tiles.
 
 Some tiles are defined by more than just a single color. One of the channels is used to define data about the tile.
 
-|                                                          | red     | green | blue  | tile         | Description                                                                                             |
-|----------------------------------------------------------|---------|-------|-------|--------------|---------------------------------------------------------------------------------------------------------|
-| ![#00ff00](https://placehold.co/15x15/00ff00/00ff00.png) | 0x00    | 0xff  | 0 - 3 | Start        | Starts the snake in a direction specified by the blue channel (see Direction Codes)                     |
-| ![#00ff7f](https://placehold.co/15x15/00ff7f/00ff7f.png) | 0 - 255 | 0xff  | 0x7f  | Apple Gate   | A gate which is only passeble after a number of apples specified by the red channel have been collected |
-| ![#7f007f](https://placehold.co/15x15/7f007f/7f007f.png) | 0x7f    | 0-3   | 0x7f  | One-Way Gate | A gate which is only exitable from the direction specified by the green channel (see Direction Codes)   |
+|                                                          | Red       | Green   | Blue    | Tile         | Description                                                                                             |
+|----------------------------------------------------------|-----------|---------|---------|--------------|---------------------------------------------------------------------------------------------------------|
+| ![#00ff00](https://placehold.co/15x15/00ff00/00ff00.png) | `0x00`    | `0xff`  | `0 - 3` | Start        | Starts the snake in a direction specified by the blue channel (see Direction Codes)                     |
+| ![#00ff7f](https://placehold.co/15x15/00ff7f/00ff7f.png) | `0 - 255` | `0xff ` | `0x7f`  | Apple Gate   | A gate which is only passeble after a number of apples specified by the red channel have been collected |
+| ![#7f007f](https://placehold.co/15x15/7f007f/7f007f.png) | `0x7f`    | `0 - 3` | `0x7f`  | One-Way Gate | A gate which is only exitable from the direction specified by the green channel (see Direction Codes)   |
 
 #### Direction Codes
  * 0 - right
@@ -92,7 +98,7 @@ Some tiles are defined by more than just a single color. One of the channels is 
 
 This image contains every type of tile. You can find it in the project as `level-example.png`.
 
-<img src="level-example.png" width="400px" style="image-rendering:pixelated"></img>
+![Level example (scaled)](level-example-scaled.png)
 
 ## Building and Running
 
