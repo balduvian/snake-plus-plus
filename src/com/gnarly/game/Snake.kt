@@ -84,7 +84,7 @@ class Snake(
 			if (inputBuffer.primary == null) {
 				if (primary != null) {
 					val wallCheckPos = snake.first().point + futureDirection.point + primary.point
-					if (!map.isSolid(map.access(wallCheckPos.x, wallCheckPos.y), primary)) {
+					if (!map.isSolid(map.access(wallCheckPos.x, wallCheckPos.y), primary) && !bodyContains(wallCheckPos)) {
 						inputBuffer.primary = primary
 					}
 				}

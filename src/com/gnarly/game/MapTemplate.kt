@@ -62,6 +62,18 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 				wrap ?: throw Exception("no 'wrap' defined in datafile $dataFile"),
 			)
 		}
+
+		fun loadFromFolder(folder: File): MapTemplate {
+			return MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"), folder.resolve("data.txt"))
+		}
+
+		fun loadNumberedFromDisk(number: Int): MapTemplate? {
+			val levelsFolder = File("res/level")
+			val levelFolder = levelsFolder.resolve("level${number}")
+
+			if (!levelFolder.exists()) return null
+			return loadFromFolder(levelFolder)
+		}
 	}
 
 	val width: Int
@@ -126,3 +138,4 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 		return Map(width, height, map.clone(), data.palette, data.wrap, true)
 	}
 }
+

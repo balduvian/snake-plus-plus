@@ -1,6 +1,6 @@
 # Snake++
 
-A continuation of Narwhal's submission for Ludum Dare 40
+A continuation of Gnarwhal's submission for Ludum Dare 40
 
 ![Game Screenshot](game-screenshot.png)
 
@@ -18,7 +18,7 @@ To download the game, go to the [Releases](https://github.com/balduvian/snake-pl
 
 ## Making Levels
 
-### It's super easy
+### It's Super Easy
 
 all of Snake++'s resources are easily accessible and modifiable to you from the `res/` directory.
 You don't even need to have to build the project to modify it's resources. You can just grab the release and start modding.
@@ -26,7 +26,16 @@ You don't even need to have to build the project to modify it's resources. You c
 If you made a good level that you would like to share, **please make a pull request** so it can be added to the project.
 I'd love to see what you can create.
 
-### Level format 
+### Debug Mode
+
+When developing levels, it will help to launch the game in debug mode. You can do this by providing the argument `--debug` or `-d` to the jar when you run it.
+In debug mode, the game loads the level from disk each time it starts. This way, you can make changes in the level and see it reflected in the game without having to restart.
+You may also provide the `-l {number}` or `--level={number}` flags to have the game start on a certain numbered level.
+
+Debug mode also introduces new controls for selecting a level.
+On the retry or continue screens, you may press the `,` or `.` keys to move backwards or forwards a level respectively. `Space` always restarts the current level.
+
+### Level Format 
 
 Each of Snake++'s levels are housed in the `res/level/` directory. Levels consist of a top level folder and some contents. One level per subfolder of the `res/level/` directory.
 There is one special level named `menu` which is diplayed behind the menu of the game.
@@ -85,7 +94,7 @@ Some tiles are defined by more than just a single color. One of the channels is 
 |                                                          | Red       | Green   | Blue    | Tile         | Description                                                                                             |
 |----------------------------------------------------------|-----------|---------|---------|--------------|---------------------------------------------------------------------------------------------------------|
 | ![#00ff00](https://placehold.co/15x15/00ff00/00ff00.png) | `0x00`    | `0xff`  | `0 - 3` | Start        | Starts the snake in a direction specified by the blue channel (see Direction Codes)                     |
-| ![#00ff7f](https://placehold.co/15x15/00ff7f/00ff7f.png) | `0 - 255` | `0xff ` | `0x7f`  | Apple Gate   | A gate which is only passeble after a number of apples specified by the red channel have been collected |
+| ![#00ff7f](https://placehold.co/15x15/00ff7f/00ff7f.png) | `0 - 255` | `0xff`  | `0x7f`  | Apple Gate   | A gate which is only passeble after a number of apples specified by the red channel have been collected |
 | ![#7f007f](https://placehold.co/15x15/7f007f/7f007f.png) | `0x7f`    | `0 - 3` | `0x7f`  | One-Way Gate | A gate which is only exitable from the direction specified by the green channel (see Direction Codes)   |
 
 #### Direction Codes
@@ -112,3 +121,5 @@ This project uses Kotlin v1.8.22, LWJGL v3.3.2, JOML v1.10.5
 6. In the `Run` box type in `run build`
 7. Hit `Apply`
 8. Then hit the green triangle run button
+
+Additionally, if you want to launch in debug mode, in the Run box you can instead put `build run --args='--debug --level=5'` (or the number of whatever level you want to test)

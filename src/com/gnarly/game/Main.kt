@@ -4,7 +4,9 @@ import com.gnarly.engine.Window
 import com.gnarly.engine.audio.ALManagement
 import org.lwjgl.glfw.GLFW.*
 
-fun main() {
+fun main(args: Array<String>) {
+	Global.parseArgs(args)
+
 	var lastTime: Long
 
 	val al = ALManagement()
@@ -13,7 +15,7 @@ fun main() {
 
 	Assets.init()
 
-	var scene: Scene = Menu()
+	var scene: Scene = if (Global.DEBUG_MODE) GamePanel() else Menu()
 	scene.resized(window, window.width, window.height)
 
 	lastTime = System.nanoTime()

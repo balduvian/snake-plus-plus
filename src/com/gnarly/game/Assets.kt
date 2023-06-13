@@ -101,16 +101,15 @@ object Assets {
 		spaceRetryTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/space-retry.png"))).defaultParams()
 		transitionTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/transition.png"))).defaultParams()
 
-		fun loadLevel(folder: File): MapTemplate {
-			return MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"), folder.resolve("data.txt"))
-		}
 
-		menuMapTemplate = loadLevel(File("res/level/menu"))
+
+		menuMapTemplate = MapTemplate.loadFromFolder((File("res/level/menu")))
+
 		levelMapTemplates = File("res/level")
 			.listFiles()!!
 			.filter { it.name.startsWith("level") }
 			.sortedBy { it.name.substring(5).toInt() }
-			.mapNotNull { folder -> if (folder.isDirectory) loadLevel(folder) else null }
+			.mapNotNull { folder -> if (folder.isDirectory) MapTemplate.loadFromFolder(folder) else null }
 
 		deathMusic = Sound(File("res/audio/death.wav"))
 		countdownMusic = Sound(File("res/audio/countdown.wav"))

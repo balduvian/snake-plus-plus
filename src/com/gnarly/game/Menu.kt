@@ -4,8 +4,7 @@ import com.gnarly.engine.Camera
 import com.gnarly.engine.Texture
 import com.gnarly.engine.Vector
 import com.gnarly.engine.Window
-import org.lwjgl.opengl.GL46.GL_DEPTH_TEST
-import org.lwjgl.opengl.GL46.glDisable
+import org.lwjgl.glfw.GLFW.*
 import kotlin.math.PI
 import kotlin.reflect.KClass
 
@@ -35,7 +34,7 @@ class Menu : Scene {
 
 		play.update(window, uiCamera, playBox.x, playBox.y, playBox.width, playBox.height)
 
-		if (play.state >= Button.PRESS) {
+		if (play.state >= Button.PRESS || window.key(GLFW_KEY_SPACE) == GLFW_PRESS) {
 			Assets.menuMapTemplate.music.stop()
 			shouldSwitch = true
 		}
@@ -60,7 +59,6 @@ class Menu : Scene {
 	}
 
 	override fun render(window: Window, delta: Float) {
-		glDisable(GL_DEPTH_TEST)
 		map.render(mapCamera, time, dataTexture)
 
 		val logoBox = TextureBox.fromTexture(Assets.logoTexture)

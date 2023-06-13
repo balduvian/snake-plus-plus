@@ -55,7 +55,7 @@ class GamePanel : Scene {
 	var transition: Transition? = null
 
 	init {
-		startMap(0)
+		startMap(Global.START_LEVEL - 1)
 	}
 
 	override fun resized(window: Window, width: Int, height: Int) {
@@ -72,20 +72,22 @@ class GamePanel : Scene {
 		Assets.deathMusic.stop()
 		Assets.winMusic.stop()
 
-		if (levelIndex == Assets.levelMapTemplates.size) {
+		val levelTemplate = if (Global.DEBUG_MODE) {
+			Global.newMapTemplate(MapTemplate.loadNumberedFromDisk(levelIndex + 1))
+		} else {
+			Assets.levelMapTemplates.elementAtOrNull(levelIndex)
+		}
+
+		if (levelTemplate == null) {
 			shouldSwitch = true
 			return
 		}
 
-		this.levelIndex = levelIndex
-
-		Assets.levelMapTemplates[levelIndex].let { mapTemplate ->
-			map = mapTemplate.toMap()
-			val music = mapTemplate.music
-			this.music = music
-			snake = Snake(mapTemplate.snakeStartDir, 10, mapTemplate.snakeStartPos)
-			tilesPerSecond = mapTemplate.data.snakeSpeed
-		}
+		map = levelTemplate.toMap()
+		val music = levelTemplate.music
+		this.music = music
+		snake = Snake(levelTemplate.snakeStartDir, 10, levelTemplate.snakeStartPos)
+		tilesPerSecond = levelTemplate.data.snakeSpeed
 
 		Assets.countdownMusic.play(false)
 
@@ -95,6 +97,7 @@ class GamePanel : Scene {
 		moveTime = 0.0f
 		cameraShake = 0.0f
 		winTimer = 0.0f
+		this.levelIndex = levelIndex
 	}
 
 	private fun startTransition(levelIndex: Int) {
@@ -203,11 +206,19 @@ class GamePanel : Scene {
 				.setCenterY(uiCamera.height * 0.75f)
 			button.update(window, uiCamera, buttonBox.x, buttonBox.y, buttonBox.width, buttonBox.height)
 
-			if (transition == null && (button.state == Button.PRESS || window.key(GLFW_KEY_SPACE) >= GLFW_PRESS)) {
-				if (state == STATE_RETRY) {
-					startTransition(levelIndex)
+			if (transition == null) {
+				if (Global.DEBUG_MODE) {
+					if (window.key(GLFW_KEY_COMMA) == GLFW_PRESS) {
+						startTransition(levelIndex - 1)
+					} else if (window.key(GLFW_KEY_PERIOD) == GLFW_PRESS) {
+						startTransition(levelIndex + 1)
+					} else if (window.key(GLFW_KEY_SPACE) == GLFW_PRESS) {
+						startTransition(levelIndex)
+					}
 				} else {
-					startTransition(levelIndex + 1)
+					if (window.key(GLFW_KEY_SPACE) == GLFW_PRESS) {
+						startTransition(if (state == STATE_RETRY) levelIndex else levelIndex + 1)
+					}
 				}
 			}
 		}
