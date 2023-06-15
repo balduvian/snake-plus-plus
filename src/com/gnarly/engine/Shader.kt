@@ -92,6 +92,11 @@ open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String
 		return this
 	}
 
+	fun uniformBool(index: Int, b: Boolean): Shader {
+		glUniform1i(uniformLocs[index], if (b) 1 else 0)
+		return this
+	}
+
 	fun enable(): Shader {
 		glUseProgram(program)
 		return this

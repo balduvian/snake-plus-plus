@@ -1,9 +1,10 @@
 package com.gnarly.game
 
 import com.gnarly.engine.Camera
+import com.gnarly.engine.FrameBuffer
 import com.gnarly.engine.Texture
 import com.gnarly.game.Util.posMod
-import org.lwjgl.opengl.GL46
+import org.lwjgl.opengl.GL46.*
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -48,7 +49,7 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 	}
 
 	fun writeDataTexture(texture: Texture): Texture {
-		texture.parameters(GL46.GL_NEAREST, GL46.GL_NEAREST, GL46.GL_CLAMP_TO_EDGE, GL46.GL_CLAMP_TO_EDGE)
+		texture.parameters(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE)
 		for (i in textureBuffer.indices) {
 			textureBuffer[i] = when (map[i]) {
 				MapTemplate.TYPE_EMPTY -> MapTemplate.INT_EMPTY
@@ -66,19 +67,40 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 		return texture
 	}
 
-	fun render(camera: Camera, time: Float, dataTexture: Texture, paletteOverride: FloatArray? = null) {
+	fun render(camera: Camera, time: Float, dataTexture: Texture, paletteOverride: FloatArray?, frameBuffer: FrameBuffer) {
 		writeDataTexture(dataTexture)
 
-		Assets.levelShader.enable().setMVP(
-			camera.projectionView(),
-			camera.model(camera.x - camera.width, camera.y - camera.height, camera.width * 2.0f, camera.height * 2.0f)
-		)
-		Assets.levelShader.setTime(time)
-			.setLevelSize(dataTexture.width, dataTexture.height)
-			.setcolorPalette(paletteOverride ?: palette)
-			.setWrap(wrap)
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+		glClear(GL_COLOR_BUFFER_BIT)
+
+		frameBuffer.use()
+
+		glClearColor(0.75f, 0.25f, 0.0f, 1.0f)
+		glClear(GL_COLOR_BUFFER_BIT)
+
+		val mapModel = camera.model.translation(camera.x, camera.y, 0.0f)
+			.rotateZ(camera.rotation)
+			.scale(camera.width, camera.height, 1.0f)
+
 		dataTexture.bind()
-		Assets.rect.render()
+		Assets.glowShader.enable().setMVP(camera.projectionView(), mapModel)
+		Assets.glowShader.setTime(time).setWrap(wrap).setLevelSize(dataTexture.width, dataTexture.height)
+		Assets.centerRect.render()
+
+		Assets.backgroundShader.enable().setMVP(camera.projectionView(), mapModel)
+		Assets.backgroundShader.setTime(time).setcolorPalette(paletteOverride ?: palette)
+		Assets.centerRect.render()
+
+		FrameBuffer.useDefault()
+		frameBuffer.bindTexture(0, 0)
+		frameBuffer.bindTexture(1, 1)
+
+		Assets.finalShader.enable().setMVP(camera.projection(), camera.model.scaling(camera.width, camera.height, 1.0f))
+		Assets.finalShader.setTime(time).setcolorPalette(paletteOverride ?: palette).setSamplers(0, 1)
+		Assets.centerRect.render()
+
+		Texture.bindNone(0)
+		Texture.bindNone(1)
 
 		val minX = floor(camera.x - camera.width / 2.0f).toInt()
 		val minY = floor(camera.y - camera.height / 2.0f).toInt()

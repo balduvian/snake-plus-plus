@@ -2,12 +2,8 @@ package com.gnarly.game
 
 import com.gnarly.engine.Texture
 import com.gnarly.engine.Vao
-import com.gnarly.engine.Vector
 import com.gnarly.engine.audio.Sound
-import com.gnarly.game.shader.ColorShader
-import com.gnarly.game.shader.LevelShader
-import com.gnarly.game.shader.ShinyShader
-import com.gnarly.game.shader.TextureShader
+import com.gnarly.game.shader.*
 import org.joml.Math.cos
 import org.joml.Math.sin
 import org.lwjgl.opengl.GL46.*
@@ -21,7 +17,12 @@ object Assets {
 	lateinit var colorShader: ColorShader
 	lateinit var textureShader: TextureShader
 	lateinit var levelShader: LevelShader
+	lateinit var backgroundShader: BackgroundShader
+	lateinit var glowShader: GlowShader
+	lateinit var finalShader: FinalShader
+
 	lateinit var rect: Vao
+	lateinit var centerRect: Vao
 	lateinit var transitionTriangle: Vao
 	lateinit var oneWayTriangle: Vao
 	lateinit var circle: Vao
@@ -48,6 +49,9 @@ object Assets {
 		colorShader = ColorShader()
 		textureShader = TextureShader()
 		levelShader = LevelShader()
+		backgroundShader = BackgroundShader()
+		glowShader = GlowShader()
+		finalShader = FinalShader()
 
 		rect = Vao(floatArrayOf(
 			0.0f, 0.0f, 0.0f,
@@ -62,6 +66,20 @@ object Assets {
 			1.0f, 1.0f,
 			1.0f, 0.0f,
 			0.0f, 0.0f,
+		), 2)
+		centerRect = Vao(floatArrayOf(
+			-0.5f, -0.5f, 0.0f,
+			0.5f, -0.5f, 0.0f,
+			0.5f, 0.5f, 0.0f,
+			-0.5f, 0.5f, 0.0f,
+		), intArrayOf(
+			0, 1, 2,
+			2, 3, 0,
+		), GL_TRIANGLES).addAttrib(floatArrayOf(
+			0.0f, 0.0f,
+			1.0f, 0.0f,
+			1.0f, 1.0f,
+			0.0f, 1.0f,
 		), 2)
 		transitionTriangle = Vao(floatArrayOf(
 			0.0f, 0.0f, 0.0f,
@@ -100,8 +118,6 @@ object Assets {
 		spaceContinueTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/space-continue.png"))).defaultParams()
 		spaceRetryTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/space-retry.png"))).defaultParams()
 		transitionTexture = Texture.fromBufferedImage(ImageIO.read(File("res/texture/transition.png"))).defaultParams()
-
-
 
 		menuMapTemplate = MapTemplate.loadFromFolder((File("res/level/menu")))
 

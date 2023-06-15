@@ -1,10 +1,8 @@
 package com.gnarly.game
 
-import com.gnarly.engine.Camera
-import com.gnarly.engine.Texture
-import com.gnarly.engine.Vector
-import com.gnarly.engine.Window
+import com.gnarly.engine.*
 import org.lwjgl.glfw.GLFW.*
+import org.lwjgl.opengl.GL46.*
 import kotlin.math.PI
 import kotlin.reflect.KClass
 
@@ -17,11 +15,24 @@ class Menu : Scene {
 	val dataTexture = Texture.empty()
 	var time = 0.0f
 
+	var levelBuffer = FrameBuffer(2)
+
 	val uiCamera = Camera()
 	val mapCamera = Camera()
 
 	init {
 		Assets.menuMapTemplate.music.play(true)
+	}
+
+	override fun resized(window: Window, width: Int, height: Int) {
+		val ratio = width.toFloat() / height.toFloat()
+
+		val cameraWidth = ratio * Util.FULL_CAMERA_HEIGHT
+
+		uiCamera.setDims(0.0f, cameraWidth, 0.0f, Util.FULL_CAMERA_HEIGHT)
+		mapCamera.setDims(-cameraWidth / 2.0f, cameraWidth / 2.0f, -Util.FULL_CAMERA_HEIGHT / 2.0f, Util.FULL_CAMERA_HEIGHT / 2.0f)
+
+		levelBuffer.resize(width, height)
 	}
 
 	override fun update(window: Window, delta: Float) {
@@ -45,28 +56,19 @@ class Menu : Scene {
 		uiCamera.update()
 	}
 
-	override fun resized(window: Window, width: Int, height: Int) {
-		val ratio = width.toFloat() / height.toFloat()
-
-		val cameraWidth = ratio * Util.FULL_CAMERA_HEIGHT
-
-		uiCamera.setDims(0.0f, cameraWidth, 0.0f, Util.FULL_CAMERA_HEIGHT)
-		mapCamera.setDims(-cameraWidth / 2.0f, cameraWidth / 2.0f, -Util.FULL_CAMERA_HEIGHT / 2.0f, Util.FULL_CAMERA_HEIGHT / 2.0f)
-	}
-
 	override fun swapScene(): KClass<*>? {
 		return if (shouldSwitch) return GamePanel::class else null
 	}
 
 	override fun render(window: Window, delta: Float) {
-		map.render(mapCamera, time, dataTexture)
+		map.render(mapCamera, time, dataTexture, null, levelBuffer)
 
-		val logoBox = TextureBox.fromTexture(Assets.logoTexture)
-			.setCenterX(uiCamera.width / 2.0f)
-			.setTop(uiCamera.height)
-		Assets.logoTexture.bind()
-		Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(logoBox))
-		Assets.rect.render()
+		//val logoBox = TextureBox.fromTexture(Assets.logoTexture)
+		//	.setCenterX(uiCamera.width / 2.0f)
+		//	.setTop(uiCamera.height)
+		//Assets.logoTexture.bind()
+		//Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(logoBox))
+		//Assets.rect.render()
 
 		play.render(uiCamera, Assets.playTexture, time)
 	}

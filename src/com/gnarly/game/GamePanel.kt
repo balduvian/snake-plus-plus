@@ -1,9 +1,6 @@
 package com.gnarly.game
 
-import com.gnarly.engine.Camera
-import com.gnarly.engine.Texture
-import com.gnarly.engine.Vector
-import com.gnarly.engine.Window
+import com.gnarly.engine.*
 import com.gnarly.engine.audio.Sound
 import org.lwjgl.glfw.GLFW.*
 import kotlin.math.PI
@@ -42,6 +39,8 @@ class GamePanel : Scene {
 	private var tempTilesPerSecond: Int? = null
 	private var shouldSwitch = false
 
+	val levelBuffer = FrameBuffer(2)
+
 	var winTimer = 0.0f
 	var cameraShake = 0.0f
 
@@ -65,6 +64,8 @@ class GamePanel : Scene {
 
 		uiCamera.setDims(0.0f, cameraWidth, 0.0f, Util.FULL_CAMERA_HEIGHT)
 		mapCamera.setDims(-cameraWidth / 2.0f, cameraWidth / 2.0f, -Util.FULL_CAMERA_HEIGHT / 2.0f, Util.FULL_CAMERA_HEIGHT / 2.0f)
+
+		levelBuffer.resize(width, height)
 	}
 
 	private fun startMap(levelIndex: Int) {
@@ -258,7 +259,7 @@ class GamePanel : Scene {
 	}
 
 	override fun render(window: Window, delta: Float) {
-		map.render(mapCamera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null)
+		map.render(mapCamera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null, levelBuffer)
 		snake.render(mapCamera, moveAlong())
 
 		val reminderScale = sin(0.5f * Math.PI.toFloat() * time) / 8.0f + 0.875f

@@ -4,33 +4,13 @@ layout (location = 0) uniform sampler2D level;
 
 uniform float time;
 uniform vec2 levelSize;
-uniform vec3 colorPalette[4];
 uniform bool wrap;
 
 in vec2 worldUV;
 
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 
 /* -------------------------------------------------- */
-
-vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-    return a + b * cos(6.28318 * (c * t + d));
-}
-
-vec3 paletteLine(float t) {
-    return palette(t, colorPalette[0], colorPalette[1], colorPalette[2], colorPalette[3]);
-}
-
-float fadeDim(float a, float border, float min, float max) {
-    float left = 1.00 - pow(1.0 / border, 2.0) * pow(a - (min + border), 2.0);
-    float right = 1.00 - pow(1.0 / border, 2.0) * pow(a - (max - border), 2.0);
-
-    return (step(a, border + min) * left) +
-    (step(border + min, a) * step(a, max - border) * 1.0) +
-    (step(max - border, a) * right);
-}
-
-const float DISTORT_SCALE = 8.0;
 
 const int POWERUP_LENGTH = 1;
 const int POWERUP_SPEED = 2;
@@ -193,9 +173,7 @@ float distanceToSpeedDownPowerup(vec2 point) {
     return d;
 }
 
-/* */
-
-vec4 getFinalColor() {
+void main() {
     float colorOffset = worldUV.x / 32.0 + worldUV.y / 32.0;
 
     /* inside outside check */
@@ -203,20 +181,6 @@ vec4 getFinalColor() {
 
     /* edge check */
     float edgeMix = gridDistance(worldUV);
-
-    float patternMix = 0.0;
-    for (float i = 0.0; i < 3.0; ++i) {
-        float posNeg = mod(i, 2.0) * 2.0 - 1.0;
-        float scale = 0.25 * pow(1.5, i);
-
-        vec2 fractionUV = fract(worldUV * vec2(scale, scale) - vec2(
-            (i + sin(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2,
-            (i + cos(time + colorOffset * DISTORT_SCALE + i * 0.5) * posNeg) * i * 0.2
-        )) - vec2(0.5, 0.5);
-
-        float centerDist = length(fractionUV);
-        patternMix += (0.005 / abs(sin(centerDist * 8.0 + (time + colorOffset * DISTORT_SCALE) * posNeg) / 8.0)) - (0.005 / 8.0);
-    }
 
     /* powerup check */
     float distanceToPowerup = min(distanceToLengthPowerup(worldUV), distanceToSpeedPowerup(worldUV));
@@ -227,18 +191,5 @@ vec4 getFinalColor() {
 
     edgeMix = max(edgeMix, powerupMix);
 
-    float edgeHighlight = 0.1 / (1.0 - edgeMix);
-
-    vec4 insideColor = vec4(paletteLine(time * 0.25 + colorOffset) * patternMix, 1.0);
-
-    vec4 glowColor = vec4(paletteLine(time * 0.25 + colorOffset), 1.0) * edgeHighlight;
-    vec4 backgroundColor = vec4(0.0, 0.0, 0.0, 1.0);
-
-    return inside * mix(insideColor, glowColor, edgeMix) + (1.0 - inside) * mix(backgroundColor, glowColor, edgeMix);
-}
-
-/* -------------------------------------------------- */
-
-void main() {
-    fragColor = getFinalColor();
+    fragColor = vec4(edgeMix, inside, 0.0, 1.0);
 }

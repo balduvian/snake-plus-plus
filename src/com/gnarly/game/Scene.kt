@@ -4,9 +4,9 @@ import com.gnarly.engine.Window
 import kotlin.reflect.KClass
 
 interface Scene {
-	fun update(window: Window, delta: Float)
-
 	fun resized(window: Window, width: Int, height: Int)
+
+	fun update(window: Window, delta: Float)
 
 	fun swapScene(): KClass<*>?
 
