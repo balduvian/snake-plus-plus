@@ -1,8 +1,9 @@
 package com.gnarly.game.shader
 
 import com.gnarly.engine.Shader
+import java.io.File
 
-class GlowShader : Shader("res/shader/glow/vert.glsl", "res/shader/glow/frag.glsl", arrayOf(
+class GlowShader : Shader(File("res/shader/glow/vert.glsl"), File("res/shader/glow/frag.glsl"), arrayOf(
 	"time",
 	"levelSize",
 	"wrap"

@@ -1,8 +1,10 @@
 package com.gnarly.game.shader
 
 import com.gnarly.engine.Shader
+import java.io.File
 
-class FinalShader : Shader("res/shader/final/vert.glsl", "res/shader/final/frag.glsl", arrayOf(
+class FinalShader : Shader(
+	File("res/shader/final/vert.glsl"), File("res/shader/final/frag.glsl"), arrayOf(
 	"time",
 	"colorPalette",
 	"glow",

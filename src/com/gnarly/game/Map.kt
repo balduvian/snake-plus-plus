@@ -4,6 +4,7 @@ import com.gnarly.engine.Camera
 import com.gnarly.engine.FrameBuffer
 import com.gnarly.engine.Texture
 import com.gnarly.game.Util.posMod
+import com.gnarly.game.shader.BackgroundShader
 import org.lwjgl.opengl.GL46.*
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -67,7 +68,7 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 		return texture
 	}
 
-	fun render(camera: Camera, time: Float, dataTexture: Texture, paletteOverride: FloatArray?, frameBuffer: FrameBuffer) {
+	fun render(camera: Camera, time: Float, dataTexture: Texture, backgroundShader: BackgroundShader, paletteOverride: FloatArray?, frameBuffer: FrameBuffer) {
 		writeDataTexture(dataTexture)
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -87,8 +88,8 @@ class Map(val width: Int, val height: Int, val map: IntArray, val palette: Float
 		Assets.glowShader.setTime(time).setWrap(wrap).setLevelSize(dataTexture.width, dataTexture.height)
 		Assets.centerRect.render()
 
-		Assets.backgroundShader.enable().setMVP(camera.projectionView(), mapModel)
-		Assets.backgroundShader.setTime(time).setcolorPalette(paletteOverride ?: palette)
+		backgroundShader.enable().setMVP(camera.projectionView(), mapModel)
+		backgroundShader.setTime(time).setcolorPalette(paletteOverride ?: palette)
 		Assets.centerRect.render()
 
 		FrameBuffer.useDefault()

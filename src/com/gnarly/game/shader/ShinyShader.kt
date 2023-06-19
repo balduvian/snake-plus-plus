@@ -1,16 +1,21 @@
 package com.gnarly.game.shader
 
 import com.gnarly.engine.Shader
+import java.io.File
 
-class ShinyShader : Shader("res/shader/shiny/vert.glsl", "res/shader/shiny/frag.glsl", arrayOf(
-	"color1",
-	"color2",
-	"time",
-	"freq",
-	"rgb",
-	"loop",
-	"textured",
-)) {
+class ShinyShader : Shader(
+	File("res/shader/shiny/vert.glsl"),
+	File("res/shader/shiny/frag.glsl"),
+	arrayOf(
+		"color1",
+		"color2",
+		"time",
+		"freq",
+		"rgb",
+		"loop",
+		"textured",
+	)
+) {
 	fun setEffect(time: Float, frequency: Float, rgb: Boolean, loop: Boolean, textured: Boolean): ShinyShader {
 		uniformVec4(0, 0.0f, 1.0f, 0.0f, 1.0f)
 		uniformVec4(1, 1.0f, 0.0f, 0.0f, 1.0f)

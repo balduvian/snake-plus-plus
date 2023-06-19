@@ -1,8 +1,9 @@
 package com.gnarly.game.shader
 
 import com.gnarly.engine.Shader
+import java.io.File
 
-class BackgroundShader : Shader("res/shader/background/vert.glsl", "res/shader/background/frag.glsl", arrayOf(
+class BackgroundShader(fragmentShader: File) : Shader(File("res/shader/background/vert.glsl"), fragmentShader, arrayOf(
 	"time",
 	"colorPalette",
 )) {

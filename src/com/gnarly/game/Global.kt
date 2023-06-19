@@ -45,6 +45,7 @@ object Global {
 
 	fun newMapTemplate(mapTemplate: MapTemplate?): MapTemplate? {
 		this.mapTemplate?.music?.destroy()
+		this.mapTemplate?.backgroundShader?.destroy()
 		this.mapTemplate = mapTemplate
 		return mapTemplate
 	}

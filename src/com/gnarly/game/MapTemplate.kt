@@ -1,11 +1,11 @@
 package com.gnarly.game
 
 import com.gnarly.engine.audio.Sound
+import com.gnarly.game.shader.BackgroundShader
 import java.io.File
 import javax.imageio.ImageIO
-import kotlin.math.E
 
-class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
+class MapTemplate(levelFile: File, soundFile: File, dataFile: File, fragmentShaderFile: File) {
 	data class Data(val snakeSpeed: Int, val snakeLength: Int, val palette: FloatArray, val wrap: Boolean)
 
 	companion object {
@@ -77,7 +77,7 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 		}
 
 		fun loadFromFolder(folder: File): MapTemplate {
-			return MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"), folder.resolve("data.txt"))
+			return MapTemplate(folder.resolve("level.png"), folder.resolve("music.wav"), folder.resolve("data.txt"), folder.resolve("frag.glsl"))
 		}
 
 		fun loadNumberedFromDisk(number: Int): MapTemplate? {
@@ -94,12 +94,15 @@ class MapTemplate(levelFile: File, soundFile: File, dataFile: File) {
 	var snakeStartPos: Point = Point(0, 0)
 	var snakeStartDir: Direction = Direction.RIGHT
 	val map: IntArray
-	val music: Sound
+	val music: Sound?
 	val data: Data
+	val backgroundShader: BackgroundShader
 
 	init {
 		data = readDataFile(dataFile)
-		music = Sound(soundFile)
+		music = if (soundFile.exists()) Sound(soundFile) else null
+
+		backgroundShader = BackgroundShader(if (fragmentShaderFile.exists()) fragmentShaderFile else File("res/shader/background/noopfrag.glsl"))
 
 		val image = ImageIO.read(levelFile)
 

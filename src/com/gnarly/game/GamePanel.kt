@@ -2,6 +2,7 @@ package com.gnarly.game
 
 import com.gnarly.engine.*
 import com.gnarly.engine.audio.Sound
+import com.gnarly.game.shader.BackgroundShader
 import org.lwjgl.glfw.GLFW.*
 import kotlin.math.PI
 import kotlin.math.pow
@@ -39,6 +40,7 @@ class GamePanel : Scene {
 	private var tempTilesPerSecond: Int? = null
 	private var shouldSwitch = false
 
+	lateinit var backgroundShader: BackgroundShader
 	val levelBuffer = FrameBuffer(2)
 
 	var winTimer = 0.0f
@@ -85,8 +87,8 @@ class GamePanel : Scene {
 		}
 
 		map = levelTemplate.toMap()
-		val music = levelTemplate.music
-		this.music = music
+		backgroundShader = levelTemplate.backgroundShader
+		music = levelTemplate.music
 		snake = Snake(levelTemplate.snakeStartDir, levelTemplate.data.snakeLength, levelTemplate.snakeStartPos)
 		tilesPerSecond = levelTemplate.data.snakeSpeed
 
@@ -259,7 +261,7 @@ class GamePanel : Scene {
 	}
 
 	override fun render(window: Window, delta: Float) {
-		map.render(mapCamera, time, levelDataTexture, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null, levelBuffer)
+		map.render(mapCamera, time, levelDataTexture, backgroundShader, if (state == STATE_RETRY) deadPalette else if (state == STATE_WIN) winPalette else null, levelBuffer)
 		snake.render(mapCamera, moveAlong())
 
 		val reminderScale = sin(0.5f * Math.PI.toFloat() * time) / 8.0f + 0.875f

@@ -1,6 +1,7 @@
 package com.gnarly.game
 
 import com.gnarly.engine.*
+import com.gnarly.game.shader.BackgroundShader
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.opengl.GL46.*
 import kotlin.math.PI
@@ -12,6 +13,7 @@ class Menu : Scene {
 	val camVel = Vector(1.0f, 0.5f).setNormalize()
 	val camCenter = Vector(0.0f, 0.0f)
 	var shouldSwitch = false
+	var backgroundShader = Assets.menuMapTemplate.backgroundShader
 	val dataTexture = Texture.empty()
 	var time = 0.0f
 
@@ -21,7 +23,7 @@ class Menu : Scene {
 	val mapCamera = Camera()
 
 	init {
-		Assets.menuMapTemplate.music.play(true)
+		Assets.menuMapTemplate.music?.play(true)
 	}
 
 	override fun resized(window: Window, width: Int, height: Int) {
@@ -46,7 +48,7 @@ class Menu : Scene {
 		play.update(window, uiCamera, playBox.x, playBox.y, playBox.width, playBox.height)
 
 		if (play.state >= Button.PRESS || window.key(GLFW_KEY_SPACE) == GLFW_PRESS) {
-			Assets.menuMapTemplate.music.stop()
+			Assets.menuMapTemplate.music?.stop()
 			shouldSwitch = true
 		}
 
@@ -61,14 +63,14 @@ class Menu : Scene {
 	}
 
 	override fun render(window: Window, delta: Float) {
-		map.render(mapCamera, time, dataTexture, null, levelBuffer)
+		map.render(mapCamera, time, dataTexture, backgroundShader, null, levelBuffer)
 
-		//val logoBox = TextureBox.fromTexture(Assets.logoTexture)
-		//	.setCenterX(uiCamera.width / 2.0f)
-		//	.setTop(uiCamera.height)
-		//Assets.logoTexture.bind()
-		//Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(logoBox))
-		//Assets.rect.render()
+		val logoBox = TextureBox.fromTexture(Assets.logoTexture)
+			.setCenterX(uiCamera.width / 2.0f)
+			.setTop(uiCamera.height)
+		Assets.logoTexture.bind()
+		Assets.textureShader.enable().setMVP(uiCamera.projection(), uiCamera.boxModel(logoBox))
+		Assets.rect.render()
 
 		play.render(uiCamera, Assets.playTexture, time)
 	}

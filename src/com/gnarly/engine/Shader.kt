@@ -1,13 +1,10 @@
 package com.gnarly.engine
 
 import org.joml.Matrix4f
-import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL46.*
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.IOException
+import java.io.File
 
-open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String>) {
+open class Shader(vertexShader: File, fragmentShader: File, uniformNames: Array<String>) {
 	private val program: Int = glCreateProgram()
 	private val mvpLoc: Int
 	private val modelLoc: Int
@@ -16,8 +13,8 @@ open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String
 	private val internalMVP = Matrix4f()
 
 	init {
-		val vert = loadShader(vertPath, GL_VERTEX_SHADER)
-		val frag = loadShader(fragPath, GL_FRAGMENT_SHADER)
+		val vert = loadShader(vertexShader, GL_VERTEX_SHADER)
+		val frag = loadShader(fragmentShader, GL_FRAGMENT_SHADER)
 		glAttachShader(program, vert)
 		glAttachShader(program, frag)
 		glLinkProgram(program)
@@ -33,24 +30,13 @@ open class Shader(vertPath: String, fragPath: String, uniformNames: Array<String
 		}
 	}
 
-	private fun loadShader(path: String, type: Int): Int {
-		val file = StringBuilder()
-		try {
-			val reader = BufferedReader(FileReader(path))
-			var line: String?
-			while (reader.readLine().also { line = it } != null) {
-				file.append(line).append('\n')
-			}
-			reader.close()
-		} catch (e: IOException) {
-			e.printStackTrace()
-		}
-		val source = file.toString()
+	private fun loadShader(file: File, type: Int): Int {
+		val source = file.readText()
 		val shader = glCreateShader(type)
 		glShaderSource(shader, source)
 		glCompileShader(shader)
 		if (glGetShaderi(shader, GL_COMPILE_STATUS) != 1) {
-			throw RuntimeException("Failed to compile shader: " + path + "! " + glGetShaderInfoLog(shader))
+			throw RuntimeException("Failed to compile shader '${file}' | ${glGetShaderInfoLog(shader)}")
 		}
 		return shader
 	}

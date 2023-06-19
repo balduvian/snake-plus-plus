@@ -1,8 +1,9 @@
 package com.gnarly.game.shader
 
 import com.gnarly.engine.Shader
+import java.io.File
 
-class LevelShader : Shader("res/shader/level/vert.glsl", "res/shader/level/frag.glsl", arrayOf(
+class LevelShader : Shader(File("res/shader/level/vert.glsl"), File("res/shader/level/frag.glsl"), arrayOf(
 	"time",
 	"levelSize",
 	"colorPalette",

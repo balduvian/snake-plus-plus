@@ -17,7 +17,6 @@ object Assets {
 	lateinit var colorShader: ColorShader
 	lateinit var textureShader: TextureShader
 	lateinit var levelShader: LevelShader
-	lateinit var backgroundShader: BackgroundShader
 	lateinit var glowShader: GlowShader
 	lateinit var finalShader: FinalShader
 
@@ -49,7 +48,6 @@ object Assets {
 		colorShader = ColorShader()
 		textureShader = TextureShader()
 		levelShader = LevelShader()
-		backgroundShader = BackgroundShader()
 		glowShader = GlowShader()
 		finalShader = FinalShader()
 
